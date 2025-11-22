@@ -133,14 +133,14 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 	mv.column_sortable_list = mv.sortableColumns()
 
 	mv.gt = NewGroupTempl(
-		"templates/base.gotmpl",
-		"templates/actions.gotmpl",
-		"templates/layout.gotmpl",
-		"templates/lib.gotmpl",
-		"templates/master.gotmpl",
-		"templates/model_layout.gotmpl",
-		"templates/form.gotmpl",
-		"templates/model_row_actions.gotmpl",
+		"templates/base.tmpl",
+		"templates/actions.tmpl",
+		"templates/layout.tmpl",
+		"templates/lib.tmpl",
+		"templates/master.tmpl",
+		"templates/model_layout.tmpl",
+		"templates/form.tmpl",
+		"templates/model_row_actions.tmpl",
 	)
 	return &mv
 }
@@ -580,7 +580,7 @@ func (V *ModelView) debugHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("foo", "bar")
 
-	V.Render(w, r, "debug.gotmpl", nil, map[string]any{
+	V.Render(w, r, "debug.tmpl", nil, map[string]any{
 		"query":     V.queryFrom(r),
 		"menu":      V.Menu,
 		"blueprint": V.Blueprint.dict(),
@@ -592,7 +592,7 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 	result := V.list(q)
 	result.Fields = V.fsList
 
-	V.Render(w, r, "model_list.gotmpl", template.FuncMap{
+	V.Render(w, r, "model_list.tmpl", template.FuncMap{
 		"is_sortable": func(name string) bool {
 			return slices.Contains(V.column_sortable_list, name)
 		},
@@ -706,7 +706,7 @@ func (V *ModelView) newHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET
-	V.Render(w, r, "model_create.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_create.tmpl", nil, map[string]any{
 		"request":    rd(r),
 		"form":       NewForm(V.fsNew, nil, csrf.Token(r)),
 		"cancel_url": must(V.Blueprint.GetUrl(".index_view")),
@@ -761,7 +761,7 @@ func (V *ModelView) editHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	V.Render(w, r, "model_edit.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_edit.tmpl", nil, map[string]any{
 		"row":     row,
 		"form":    NewForm(V.fsEdit, row, csrf.Token(r)),
 		"request": rd(r),
@@ -805,7 +805,7 @@ func (V *ModelView) detailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	V.Render(w, r, "model_details.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_details.tmpl", nil, map[string]any{
 		"row":             row,
 		"details_columns": V.Fields, // show all fields
 		"request":         rd(r),
@@ -965,7 +965,7 @@ func (V *ModelView) intoRow(uv url.Values, fields []*Field) *Row {
 
 		if len(f.Choices) > 0 {
 			// fix field_select2 formerly None(in python) to null
-			// TODO: fix in form.gotmpl
+			// TODO: fix in form.tmpl
 			if v == "__None" {
 				continue // ignore
 			}

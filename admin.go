@@ -49,7 +49,7 @@ func NewAdmin(name string) *Admin {
 			csrf.CookieName("csrf"), csrf.FieldName("csrf_token")),
 		mux: http.NewServeMux(),
 
-		indexTemplateFile: "templates/index.gotmpl",
+		indexTemplateFile: "templates/index.tmpl",
 		theme:             "default", // "cyborg",
 	}
 	A.BaseView.admin = A
@@ -313,12 +313,12 @@ func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 		Funcs(A.funcs(template.FuncMap{
 			"get_flashed_messages": func() []any { return A.Session(r).Flashes() },
 		})).
-		ParseFiles("templates/debug.gotmpl")
+		ParseFiles("templates/debug.tmpl")
 	if err != nil {
 		panic(err)
 	}
 
-	err = tx.Lookup("debug.gotmpl").Execute(w, A.dict())
+	err = tx.Lookup("debug.tmpl").Execute(w, A.dict())
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	}
@@ -404,7 +404,7 @@ func (A *Admin) generateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		// GET
-		A.Render(w, r, "templates/generate.gotmpl", nil, map[string]any{
+		A.Render(w, r, "templates/generate.tmpl", nil, map[string]any{
 			"gen":        nil,
 			"csrf_field": csrf.TemplateField(r),
 		})
@@ -412,7 +412,7 @@ func (A *Admin) generateHandler(w http.ResponseWriter, r *http.Request) {
 		// POST
 		g = NewGenerator(r.FormValue("url"))
 		g.Package = r.FormValue("package")
-		A.Render(w, r, "templates/generate.gotmpl", nil, map[string]any{
+		A.Render(w, r, "templates/generate.tmpl", nil, map[string]any{
 			"gen":        g,
 			"csrf_field": csrf.TemplateField(r),
 		})
@@ -444,7 +444,7 @@ func (A *Admin) consoleHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	A.Render(w, r, "templates/console.gotmpl", nil, map[string]any{
+	A.Render(w, r, "templates/console.tmpl", nil, map[string]any{
 		"sql":        sql,
 		"result":     result,
 		"dbs":        lo.Keys(A.dbs),
@@ -458,7 +458,7 @@ func (A *Admin) traceHandler(w http.ResponseWriter, r *http.Request) {
 		m["entries"] = A.tracer.Entries()
 	}
 
-	A.Render(w, r, "templates/trace.gotmpl", nil, m)
+	A.Render(w, r, "templates/trace.tmpl", nil, m)
 }
 
 func (A *Admin) themeHandler(w http.ResponseWriter, r *http.Request) {
