@@ -46,6 +46,11 @@ func main() {
 		Preloads("Addresses")
 	a.AddView(va)
 
+	a.AddView(gadm.NewModelView(sqla.Language{}, db, "Many2Many"))
+	vs := gadm.NewModelView(sqla.Student{}, db, "Many2Many").
+		Preloads("Languages")
+	a.AddView(vs)
+
 	a.AddView(gadm.NewModelView(sqla.Toy{}, db, "Polymorphism"))
 	vt := gadm.NewModelView(sqla.Dog{}, db, "Polymorphism").
 		Preloads("Toys")
@@ -60,9 +65,11 @@ func main() {
 
 	// TODO: replace index handler /admin/
 
-	// for _, p := range sqla.Samples {
-	// 	db.Create(p)
-	// }
+	// db.Migrator().AutoMigrate(sqla.Models...)
+
+	for _, p := range sqla.Samples {
+		_ = db.Create(p)
+	}
 
 	a.Run()
 }

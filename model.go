@@ -163,7 +163,7 @@ func (f *Field) Slice() []*wrap {
 
 	ws := make([]*wrap, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
-		ws[i] = Wrap(rv.Index(0).Interface())
+		ws[i] = Wrap(rv.Index(i).Interface())
 	}
 	return ws
 }
@@ -273,6 +273,7 @@ func Wrap(v any) *wrap {
 	return &wrap{m, NewRow(m.Fields, v)}
 }
 
+// TODO: add wrap.Display for Stringer
 func (w *wrap) Endpoint() string {
 	return w.Model.endpoint()
 }

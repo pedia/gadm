@@ -129,9 +129,9 @@ func (A *Admin) AddView(view View) View {
 
 	if mv, ok := view.(*ModelView); ok {
 		if A.autoMigrate {
-			if err := mv.db.Migrator().AutoMigrate(mv.Model.new()); err != nil {
-				log.Printf("auto migrate failed: %s", err)
-			}
+			// if err := mv.db.Migrator().AutoMigrate(mv.Model.new()); err != nil {
+			// 	log.Printf("auto migrate failed: %s", err)
+			// }
 		}
 
 		if !slices.Contains(lo.Values(A.dbs), mv.db) {
@@ -162,10 +162,18 @@ func (A *Admin) addViewToMenu(view View) {
 	}
 }
 func (A *Admin) freeze() {
+	// migrate all here
+	db2ms := map[*gorm.DB][]any{}
+
 	for _, v := range A.views {
 		if mv, ok := v.(*ModelView); ok {
+			db2ms[mv.db] = append(db2ms[mv.db], mv.Model.new())
 			mv.freeze()
 		}
+	}
+
+	for db, ms := range db2ms {
+		db.Migrator().AutoMigrate(ms...)
 	}
 }
 func (A *Admin) staticURL(filename, ver string) string {

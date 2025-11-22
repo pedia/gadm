@@ -9,7 +9,7 @@ import (
 
 type Security struct {
 	*BaseView
-	CurrentUser *BaseUser
+	CurrentUser *User
 }
 
 func AddSecurity(admin *Admin) *Security {
@@ -45,8 +45,8 @@ func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request)      
 func (S *Security) forgotPasswordHandler(w http.ResponseWriter, r *http.Request)   {}
 func (S *Security) sendConfirmationHandler(w http.ResponseWriter, r *http.Request) {}
 
-type BaseUser struct {
-	Id    int    `gorm:"primaryKey"`
+type User struct {
+	Id    int    `gorm:"primaryKey;autoincrement"`
 	Email string `gorm:"uniqueIndex;not null;size:255"`
 	// Username is important since shouldn't expose email to other users in most cases.
 	Username string `gorm:"size:255"`
@@ -57,7 +57,7 @@ type BaseUser struct {
 	UpdateDatetime time.Time
 
 	// Flask-Security user identifier
-	Uniquifier string `gorm:"uniqueIndex;not null"`
+	// Uniquifier string `gorm:"uniqueIndex;not null"`
 
 	// confirmable
 	ConfirmedAt null.Time
@@ -68,9 +68,11 @@ type BaseUser struct {
 	LastLoginIp    null.String `gorm:"size:64"`
 	CurrentLoginIp null.String `gorm:"size:64"`
 	LoginCount     int
+	Roles          []Role `gorm:"many2many:user_role"`
+}
 
-	// 2FA
-	TfPrimaryMethod string `gorm:"size:64"`
-	TfTotpSecret    string `gorm:"size:255"`
-	TfPhoneNumber   string `gorm:"size:128"`
+type Role struct {
+	Id          int    `gorm:"primaryKey;autoincrement"`
+	Name        string `gorm:"uniqueIndex;not null;size:64"`
+	Description string `gorm:"size:255"`
 }
