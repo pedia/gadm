@@ -12,5 +12,10 @@ func main() {
 		_ = os.Chdir("..")
 	}
 
-	gadm.NewAdmin("Admin").Run()
+	admin := gadm.NewAdmin("Admin")
+	// for _, v := range dao.Views() {
+	// 	admin.AddView(v)
+	// }
+
+	admin.Run()
 }

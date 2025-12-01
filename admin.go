@@ -76,7 +76,7 @@ func NewAdmin(name string) *Admin {
 	// TODO: read lang from config
 	gotext.Configure("translations", "en", "admin")
 
-	A.security = AddSecurity(A)
+	A.security = AddSecurity(A, nil)
 	return A
 }
 
@@ -128,12 +128,6 @@ func (A *Admin) AddView(view View) View {
 	}
 
 	if mv, ok := view.(*ModelView); ok {
-		if A.autoMigrate {
-			// if err := mv.db.Migrator().AutoMigrate(mv.Model.new()); err != nil {
-			// 	log.Printf("auto migrate failed: %s", err)
-			// }
-		}
-
 		if !slices.Contains(lo.Values(A.dbs), mv.db) {
 			A.dbs[mv.Blueprint.Name] = mv.db
 		}
@@ -162,7 +156,6 @@ func (A *Admin) addViewToMenu(view View) {
 	}
 }
 func (A *Admin) freeze() {
-	// migrate all here
 	db2ms := map[*gorm.DB][]any{}
 
 	for _, v := range A.views {
@@ -172,19 +165,23 @@ func (A *Admin) freeze() {
 		}
 	}
 
-	for db, ms := range db2ms {
-		db.Migrator().AutoMigrate(ms...)
+	// migrate all here, single table migration won't create many2many table
+	if A.autoMigrate {
+		for db, ms := range db2ms {
+			db.AutoMigrate(ms...)
+		}
 	}
 }
 func (A *Admin) staticURL(filename, ver string) string {
 	path, err := A.Blueprint.GetUrl(".static")
-	if err == nil {
-		if ver != "" {
-			return path + filename + "?ver=" + ver
-		}
-		return path + filename
+	if err != nil {
+		panic(err)
 	}
-	panic(err)
+
+	if ver != "" {
+		return path + filename + "?ver=" + ver
+	}
+	return path + filename
 }
 
 // Flask.url_for, `endpoint` like:

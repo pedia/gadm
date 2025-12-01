@@ -52,7 +52,7 @@ func Parse(jdbc string) *databaseURL {
 	r := databaseURL{URL: parsed}
 
 	switch parsed.Scheme {
-	case "postgresql":
+	case "postgresql", "postgres":
 		r.Creator = postgres.Open
 
 		// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=America/New_York"
@@ -80,9 +80,6 @@ func Parse(jdbc string) *databaseURL {
 			password, _ = parsed.User.Password()
 		} else {
 			password = parsed.Query().Get("password")
-		}
-		if password == "" {
-			password = "postgresql" // default
 		}
 		arr = append(arr, fmt.Sprintf("password=%s", password))
 

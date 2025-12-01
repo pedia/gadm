@@ -9,9 +9,9 @@ func TestJDBCURL(t *testing.T) {
 	}{
 		{url: "sqlite:path/to/sqlite.db", dsn: "path/to/sqlite.db"},
 		{url: "sqlite::memory:", dsn: ":memory:"},
-		{url: "postgresql://localhost:5432/mydatabase?user=myuser&password=mypassword",
+		{url: "postgres://localhost:5432/mydatabase?user=myuser&password=mypassword",
 			dsn: "host=localhost user=myuser password=mypassword dbname=mydatabase port=5432 sslmode=disable"},
-		{url: "postgresql://user:password@localhost:5432/database",
+		{url: "postgres://user:password@localhost:5432/database",
 			dsn: "host=localhost user=user password=password dbname=database port=5432 sslmode=disable"},
 		{url: "mysql://user:password@localhost:3366/database?charset=utf8mb4&parseTime=True&loc=Local",
 			dsn: "user:password@localhost:3366/database?charset=utf8mb4&parseTime=True&loc=Local"},

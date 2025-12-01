@@ -6,8 +6,8 @@ Key goals:
 - Easy to edit, filter and search for CRUD and basic relations
 - Write less code
 - Put everything in one admin
-- Auto-generate models and views from a live database
-- WebAuthn level safety
+- Auto-generate models(by most powerful `sqlparser-rs`) and views from a live database
+- TODO: WebAuthn level safety
 
 ![Screenshot](screenshot.png)
 

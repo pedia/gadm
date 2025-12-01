@@ -100,7 +100,7 @@ func TestModel(t *testing.T) {
 		&gorm.Config{NamingStrategy: Namer})
 	db.AutoMigrate(sqla.AllTyped{})
 
-	a2 := []sqla.AllTyped{sqla.Samples[0].(sqla.AllTyped), sqla.Samples[1].(sqla.AllTyped)}
+	a2 := []*sqla.AllTyped{sqla.Samples[0].(*sqla.AllTyped), sqla.Samples[1].(*sqla.AllTyped)}
 	tx0 := db.Model(&sqla.AllTyped{}).Create(&a2)
 	is.Nil(tx0.Error)
 
@@ -219,8 +219,8 @@ func (ts *ModelTestSuite) TestModelView() {
 	ts.is.NotEmpty(v.GetBlueprint().Children)
 
 	ts.is.Equal("/admin/alltyped/", must(v.Blueprint.GetUrl(".index_view")))
-	ts.is.Equal("/admin/alltyped/action", must(v.Blueprint.GetUrl(".action_view")))
-	ts.is.Equal("/admin/alltyped/action?a=b", must(v.Blueprint.GetUrl(".action_view", "a", "b")))
+	ts.is.Equal("/admin/alltyped/action", must(v.Blueprint.GetUrl(".action")))
+	ts.is.Equal("/admin/alltyped/action?a=b", must(v.Blueprint.GetUrl(".action", "a", "b")))
 
 	// query
 	r1 := httptest.NewRequest("", "/admin/tag/?sort=0&desc=1&page_size=23&page=2", nil)

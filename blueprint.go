@@ -10,14 +10,14 @@ import (
 
 // like flask.Blueprint
 //
-// | Name  | Endpoint       | Path       |
-// |-------|----------------|------------|
-// | Foo   | foo            | /foo/      |
-// |       | .index         | /          |
-// |       | .action_view   | /action    |
-// |       | foo.index      | /foo/      |
-// | Admin | admin          | /admin/    |
-// |       | .index         | /          |
+// | Name  | Endpoint  | Path       |
+// |-------|-----------|------------|
+// | Foo   | foo       | /foo/      |
+// |       | .index    | /          |
+// |       | .action   | /action    |
+// |       | foo.index | /foo/      |
+// | Admin | admin     | /admin/    |
+// |       | .index    | /          |
 //
 // A blueprint is A model and dependent pages
 type Blueprint struct {

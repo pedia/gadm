@@ -52,33 +52,14 @@ func NewView(menu Menu) *BaseView {
 }
 
 // Expose "/test" create Blueprint{Endpoint: "test", Path: "/test"}
-// Expose "/test" create Blueprint{Endpoint: "test", Path: "/test"}
 func (V *BaseView) Expose(path string, h http.HandlerFunc) {
-	// generate default `endpoint`
+	// default `endpoint`, would be `.test`
 	ep := strings.ToLower(strings.ReplaceAll(path, "/", ""))
 
 	V.Blueprint.AddChild(
 		&Blueprint{Endpoint: ep, Path: path, Handler: h},
 	)
 }
-
-// func (V *BaseView) GetUrl(ep string, q *Query, args ...any) string {
-// 	var uv url.Values
-// 	if q != nil {
-// 		uv = q.withArgs(args...).toValues()
-// 	} else {
-// 		uv = pairsToQuery(args...)
-// 	}
-// 	_ = uv
-
-// 	if strings.HasPrefix(ep, ".") {
-// 		ep = V.Blueprint.Endpoint + ep
-// 	}
-// 	if V.admin != nil {
-// 		return must(V.admin.GetUrl(ep, q, args...))
-// 	}
-// 	return must(V.Blueprint.GetUrl(ep, queryToPairs(uv)...))
-// }
 
 func (V *BaseView) GetBlueprint() *Blueprint { return V.Blueprint }
 func (V *BaseView) GetMenu() *Menu           { return &V.Menu }
@@ -90,7 +71,6 @@ func (V *BaseView) Render(w http.ResponseWriter, r *http.Request, fn string, fun
 	fm["get_flashed_messages"] = func() []any {
 		return V.admin.Session(r).Flashes()
 	}
-	fm["pager_url"] = func() string { return "TODO" }
 	fm["csrf_token"] = func() string { return csrf.Token(r) }
 
 	if err := V.gt.Render(w, fn, fm, V.dict(r, data)); err != nil {

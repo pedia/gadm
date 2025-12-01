@@ -1,6 +1,6 @@
 module gadm
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
@@ -17,9 +17,8 @@ require (
 	github.com/samber/lo v1.39.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cast v1.3.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.11.1
 	github.com/tdewolff/minify/v2 v2.24.4
-	golang.org/x/net v0.46.0
 	gopkg.in/guregu/null.v4 v4.0.0
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 	gorm.io/driver/mysql v1.6.0
@@ -65,3 +64,5 @@ require (
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
 )
+
+replace github.com/pedia/sqlparser => ../sqlparser-go

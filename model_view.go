@@ -119,7 +119,7 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 			"details_view": {Endpoint: "details_view", Path: "/details", Handler: mv.detailHandler},
 			"ajax_update":  {Endpoint: "ajax_update", Path: "/ajax/update", Handler: mv.ajaxUpdate},
 			"ajax_lookup":  {Endpoint: "ajax_lookup", Path: "/ajax/lookup", Handler: mv.ajaxLookup},
-			"action_view":  {Endpoint: "action_view", Path: "/action", Handler: mv.actionHandler},
+			"action":       {Endpoint: "action", Path: "/action", Handler: mv.actionHandler},
 			"edit_view":    {Endpoint: "edit_view", Path: "/edit", Handler: mv.editHandler},
 			"delete_view":  {Endpoint: "delete_view", Path: "/delete", Handler: mv.deleteHandler},
 			// not .export_view
@@ -630,7 +630,7 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 		"list_row_actions":         V.list_row_actions(r),
 		"actions": []Action{{Name: "delete", Title: "Delete",
 			CSRFToken: csrf.Token(r),
-			URL:       must(V.Blueprint.GetUrl(".action_view")),
+			URL:       must(V.Blueprint.GetUrl(".action")),
 			ReturnURL: must(V.Blueprint.GetUrl(".index_view"))}},
 		"actions_confirmation": map[string]string{"delete": "Are you sure you want to delete selected records?"},
 		"list_columns":         V.fsList,
@@ -936,9 +936,6 @@ func (V *ModelView) Render(w http.ResponseWriter, r *http.Request, name string, 
 		},
 		"get_url": func(endpoint string, args ...any) string {
 			return must(V.Blueprint.GetUrl(endpoint, args...))
-		},
-		"pager_url": func(page int) string {
-			return must(V.Blueprint.GetUrl(".index_view", "page", page))
 		},
 		"csrf_token":  func() string { return csrf.Token(r) },
 		"list_form":   V.inline_form(csrf.Token(r)),
