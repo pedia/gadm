@@ -1,5 +1,4 @@
 {{ template "master.tmpl" . }}
-{{ template "actions.tmpl" . }}
 {{ template "lib.tmpl" . }}
 
 {{ define "head" }}
@@ -168,7 +167,7 @@
                         {{ $f := $row.FieldOf $c }}
                         <td class="col-{{$c.DBName}}">
                         {{- if $f.IsStruct }}
-                            <a href="{{get_url ( printf "%s%s" $f.Endpoint ".details_view") "id" $row.GetPkValue }}">{{ $f.Display }}</a>
+                            <a href="{{get_url ( printf "%s%s" $f.Endpoint ".details_view") "id" $f.GetPkValue }}">{{ $f.Display }}</a>
                         {{ else if $f.IsSlice }}
                             {{- range $f.Slice}}
                             <a href="{{get_url ( printf "%s%s" .Endpoint ".details_view") "id" .GetPkValue }}">{{.Endpoint}}</a>
