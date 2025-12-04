@@ -2,7 +2,7 @@ package gadm
 
 import "testing"
 
-func TestJDBCURL(t *testing.T) {
+func TestDatabaseURL(t *testing.T) {
 	testcases := []struct {
 		url string
 		dsn string

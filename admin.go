@@ -76,7 +76,7 @@ func NewAdmin(name string) *Admin {
 	// TODO: read lang from config
 	gotext.Configure("translations", "en", "admin")
 
-	A.security = AddSecurity(A, nil)
+	A.security = NewSecurity(A, nil)
 	return A
 }
 
@@ -222,8 +222,10 @@ func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cw := NewCachedWriter(w)
 	// csrf protect
-	handlers.LoggingHandler(os.Stdout,
-		A.csrf(A.mux)).ServeHTTP(cw, r)
+	handlers.LoggingHandler(
+		os.Stdout,
+		A.csrf(A.mux),
+	).ServeHTTP(cw, r)
 
 	// save sesstion before flush
 	if err := sessions.Save(r, cw); err != nil {
@@ -278,11 +280,12 @@ var themes = []string{
 
 func (A *Admin) dict(others ...map[string]any) map[string]any {
 	o := map[string]any{
-		"debug":    A.debug,
-		"security": A.security,
-		"db":       len(A.dbs),
-		"name":     A.Blueprint.Name,
-		"url":      A.Blueprint.Path, // "/admin"
+		"debug":     A.debug,
+		"security":  A.security,
+		"db":        len(A.dbs),
+		"name":      A.Blueprint.Name,
+		"url":       A.Blueprint.Path, // "/admin"
+		"blueprint": A.Blueprint,
 		// 'swatch' from flask-admin
 		"swatch": A.theme,
 		"menu":   A.BaseView.Menu,
@@ -307,9 +310,7 @@ func (A *Admin) debugHandler(w http.ResponseWriter, r *http.Request) {
 		panic("not found PlaintextHTTPContextKey")
 	}
 
-	ReplyJson(w, 200, A.dict(map[string]any{
-		"blueprint": A.Blueprint.dict(),
-	}))
+	ReplyJson(w, 200, A.dict())
 }
 func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", ContentTypeUtf8Html)

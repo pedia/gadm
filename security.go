@@ -13,7 +13,7 @@ type Security struct {
 	*BaseView
 }
 
-func AddSecurity(admin *Admin, db *gorm.DB) *Security {
+func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 	S := new(Security)
 	S.BaseView = NewView(Menu{Name: gettext("Account"), Category: "Account"})
 	S.Blueprint = &Blueprint{
@@ -27,7 +27,9 @@ func AddSecurity(admin *Admin, db *gorm.DB) *Security {
 		},
 	}
 
-	admin.AddView(S)
+	// admin.AddView(S)
+	admin.Register(S.Blueprint)
+	S.admin = admin
 
 	tm := &Menu{Name: "Theme", Category: "Theme"}
 	for _, name := range themes {
@@ -66,6 +68,12 @@ func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (S *Security) forgotPasswordHandler(w http.ResponseWriter, r *http.Request)   {}
 func (S *Security) sendConfirmationHandler(w http.ResponseWriter, r *http.Request) {}
+
+func (S *Security) Check(w http.ResponseWriter, r *http.Request) {
+	// if !logined(r) {
+	//   redirect to security.login
+	// }
+}
 
 type User struct {
 	Id    int    `gorm:"primaryKey;autoincrement"`

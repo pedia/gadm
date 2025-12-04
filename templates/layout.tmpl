@@ -44,6 +44,7 @@
     {{- end }}
 {{ end }}
 
+
 {{ define "layout_messages" }}
     {{- range get_flashed_messages }}
         <div class="alert alert-{{ .Category }} alert-dismissable">
@@ -52,6 +53,7 @@
         </div>
     {{ end -}}
 {{ end }}
+
 
 {{ define "security" }}
     <li class="dropdown{{ if .Class }} {{ .Class }}{{ end }}">
@@ -62,4 +64,51 @@
             {{- end }}
         </ul>
     </li>
+{{ end }}
+
+
+{{/* (actions, btn_class='nav-link dropdown-toggle' */}}
+{{ define "actionlib_dropdown" -}}
+  {{ $btn_class := "nav-link dropdown-toggle" }}
+    <a class="{{ $btn_class }}" data-toggle="dropdown" href="javascript:void(0)" role="button" aria-haspopup="true"
+       aria-expanded="false">{{ gettext "With selected" }}<b class="caret"></b></a>
+    <div class="dropdown-menu">
+            <a class="dropdown-item" href="javascript:void(0)"
+               onclick="return modelActions.execute('{{ .Name }}');">{{ .Title }}</a>
+    </div>
+{{ end }}
+
+{{/* (actions, url) */}}
+{{ define "actionlib_form" }}
+        <form id="action_form" action="{{ .URL }}" method="POST" style="display: none">
+        {{ if .CSRFToken }}
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}"/>
+        {{ end }}
+            {{/* action_form.url(value=return_url) */}}
+            <input id="url" name="url" type="hidden" value="{{ .ReturnURL }}">
+            <input id="action" name="action" type="hidden" value="{{ .Name }}">
+        </form>
+{{ end }}
+
+
+{{ define "actionlib_script" }}
+        <div id="actions-confirmation-data" style="display:none;">{{ marshal .actions_confirmation }}</div>
+        <div id="message-data" style="display:none;">{{ json .message  }}</div>
+        <script src="{{ admin_static_url "admin/js/actions.js" "1.0.0" }}"></script>
+{{ end }}
+
+
+
+{{ define "admin_nav" }}
+  <ul class="nav nav-tabs">
+      <li class="nav-item">
+          <a href="{{get_url ".console"}}" class="nav-link {{if eq .path (get_url ".console") }}active{{end}}">SQL Console</a>
+      </li>
+      <li class="nav-item">
+          <a href="{{get_url ".trace"}}" title="Trace" class="nav-link {{if eq .path (get_url ".trace") }}active{{end}}">Trace</a>
+      </li>
+      <li class="nav-item">
+          <a href="{{get_url ".generate"}}" title="Generate from Database" class="nav-link {{if eq .path (get_url ".generate") }}active{{end}}">Generate</a>
+      </li>
+  </ul>
 {{ end }}

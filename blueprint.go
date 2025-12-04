@@ -1,11 +1,15 @@
 package gadm
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 // like flask.Blueprint
@@ -160,35 +164,63 @@ func (b *Blueprint) GetUrl(endpoint string, qs ...any) (string, error) {
 	return "", fmt.Errorf(`endpoint miss for '%s'`, endpoint)
 }
 
-func (b *Blueprint) dict() map[string]any {
-	o := map[string]any{
-		"endpoint": b.Endpoint,
-		"path":     b.Path,
-		"handler":  b.Handler != nil,
-		"name":     b.Name,
-		"parent":   b.Parent != nil,
-	}
-
-	if b.Children != nil {
-		oc := map[string]any{}
-		for k, v := range b.Children {
-			oc[k] = v.dict()
-		}
-		o["children"] = oc
-	}
-	return o
+func (b *Blueprint) MarshalJSON() ([]byte, error) {
+	w := bytes.NewBuffer(nil)
+	err := json.NewEncoder(w).Encode(map[string]any{
+		"endpoint":        b.Endpoint,
+		"path":            b.Path,
+		"name":            b.Name,
+		"children":        b.Children,
+		"static_folder":   b.StaticFolder,
+		"template_folder": b.TemplateFolder,
+	})
+	return w.Bytes(), err
 }
 
-// menu
+// Tree liked structure
+type Menu struct {
+	Category string // tree liked
+	Name     string
+	Path     string
 
-// admin scope:
-// admin.logout_view
-// admin.index
-// admin.static
+	Icon  string
+	Class string
 
-// security(login) scope:
-// security.login /login
-// security.logout /logout
-// security.register /register
-// security.forgot_password
-// security.send_confirmation
+	IsActive     bool // TODO:
+	IsVisible    bool
+	IsAccessible bool
+
+	Children []*Menu
+}
+
+// TODO: AddCategory/AddLink/AddMenuItem
+func (M *Menu) AddMenu(i *Menu, category ...string) {
+	if i.Category == "" {
+		if i.Path == "" && !strings.HasPrefix(i.Path, "/") {
+			np := "/" + strings.ToLower(i.Name)
+			log.Printf(`menu(%s) path '%s' invalid, fixed to '%s'`, i.Name, i.Path, np)
+			i.Path = np
+		}
+	}
+
+	parent := M.find(firstOr(category, ""))
+	if parent != nil {
+		parent.Children = append(parent.Children, i)
+	} else {
+		// stub, create a new stub or self is stub
+		stub := &Menu{Name: i.Category, Category: i.Category}
+		stub.Children = append(stub.Children, i)
+		M.Children = append(M.Children, stub)
+	}
+}
+
+func (M *Menu) find(cate string) *Menu {
+	if M.Category == cate {
+		return M
+	}
+
+	c, _ := lo.Find(M.Children, func(m *Menu) bool {
+		return m.Category == cate
+	})
+	return c
+}

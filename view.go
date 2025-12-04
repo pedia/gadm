@@ -43,8 +43,7 @@ type BaseView struct {
 func NewView(menu Menu) *BaseView {
 	return &BaseView{Blueprint: &Blueprint{Path: menu.Path},
 		Menu: menu,
-		gt: NewGroupTempl("templates/actions.tmpl",
-			"templates/base.tmpl",
+		gt: NewGroupTempl("templates/base.tmpl",
 			"templates/layout.tmpl",
 			"templates/lib.tmpl", // move to ModelView
 			"templates/master.tmpl"),

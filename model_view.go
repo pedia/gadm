@@ -134,7 +134,6 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 
 	mv.gt = NewGroupTempl(
 		"templates/base.tmpl",
-		"templates/actions.tmpl",
 		"templates/layout.tmpl",
 		"templates/lib.tmpl",
 		"templates/master.tmpl",
@@ -583,7 +582,7 @@ func (V *ModelView) debugHandler(w http.ResponseWriter, r *http.Request) {
 	V.Render(w, r, "debug.tmpl", nil, map[string]any{
 		"query":     V.queryFrom(r),
 		"menu":      V.Menu,
-		"blueprint": V.Blueprint.dict(),
+		"blueprint": V.Blueprint,
 	})
 }
 func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
