@@ -258,9 +258,11 @@ func (*Admin) marshal(v any) string {
 	}
 	return string(bs)
 }
-func (*Admin) config(key string) bool {
-	return false
+
+func (A *Admin) config(name string) any {
+	return config.Get(name)
 }
+
 func (*Admin) gettext(format string, a ...any) string {
 	return gettext(format, a...)
 }
@@ -348,10 +350,10 @@ func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 func (A *Admin) funcs(more template.FuncMap) template.FuncMap {
 	res := merge(sprig.FuncMap(), Funcs)
 	merge(res, template.FuncMap{
-		"admin_static_url": A.staticURL, // used
-		"marshal":          A.marshal,   // test
-		"config":           A.config,    // used
-		"gettext":          A.gettext,   //
+		"admin_static_url": A.staticURL,
+		"marshal":          A.marshal,
+		"config":           A.config,
+		"gettext":          A.gettext,
 		"get_url":          A.Blueprint.GetUrl,
 		// escape safe
 		"safehtml": func(s string) template.HTML { return template.HTML(s) },

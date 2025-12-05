@@ -130,9 +130,9 @@ func (b *Blueprint) prefixOf(tail string) string {
 // child.index
 func (b *Blueprint) GetUrl(endpoint string, qs ...any) (string, error) {
 	eps := strings.Split(endpoint, ".")
-	if eps[0] == "" || eps[0] == b.Endpoint || mapContains(b.Children, eps[0]) {
+	if eps[0] == "" || eps[0] == b.Endpoint || inmap(b.Children, eps[0]) {
 		i := 1
-		if mapContains(b.Children, eps[0]) {
+		if inmap(b.Children, eps[0]) {
 			i = 0
 		}
 

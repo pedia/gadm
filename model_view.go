@@ -644,11 +644,14 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return ""
 		}(),
-		"sort_desc":              q.Desc,
+		"sort_desc": q.Desc,
+
+		// search
 		"search":                 q.Search,
 		"column_searchable_list": V.column_searchable_list,
 		"search_placeholder":     strings.Join(V.column_searchable_list, ","),
 
+		// filter
 		"filters":        len(V.column_filters) > 0,
 		"filter_groups":  toGroup(V.filters),
 		"active_filters": activeFilter(q.filters), // [[27, "Title", "part"]]

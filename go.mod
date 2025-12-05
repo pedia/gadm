@@ -13,7 +13,6 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/pedia/gadmin v0.0.0-20241029124951-214a8509e0d9
 	github.com/samber/lo v1.39.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cast v1.3.1
@@ -65,4 +64,4 @@ require (
 	modernc.org/sqlite v1.23.1 // indirect
 )
 
-replace github.com/pedia/sqlparser => ../sqlparser-go
+// replace github.com/pedia/sqlparser => ../sqlparser-go

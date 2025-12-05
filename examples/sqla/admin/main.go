@@ -65,8 +65,6 @@ func main() {
 
 	// TODO: replace index handler /admin/
 
-	// db.Migrator().AutoMigrate(sqla.Models...)
-
 	for _, p := range sqla.Samples {
 		_ = db.Create(p)
 	}

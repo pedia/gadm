@@ -101,7 +101,7 @@ func queryToPairs(uv url.Values) []any {
 	return arr
 }
 
-func mapContains[K comparable, V any](m map[K]V, k K) bool {
+func inmap[K comparable, V any](m map[K]V, k K) bool {
 	_, ok := m[k]
 	return ok
 }
