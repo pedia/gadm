@@ -443,7 +443,7 @@ func LoadPlugin(admin *Admin, fn string) error {
 		if ft, ok := f.(func() []*ModelView); ok {
 			vs := ft()
 			for _, v := range vs {
-				admin.AddView(v)
+				admin.AddView(v, "Generate")
 			}
 		}
 	}

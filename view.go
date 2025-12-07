@@ -89,7 +89,6 @@ func (V *BaseView) dict(r *http.Request, others ...map[string]any) map[string]an
 	// TODO: remove r
 	o := map[string]any{
 		"path":               r.URL.Path,
-		"category":           V.Menu.Category,
 		"name":               V.Menu.Name,
 		"extra_css":          []string{},
 		"extra_js":           []string{}, // "a.js", "b.js"}

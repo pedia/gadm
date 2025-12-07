@@ -1,6 +1,8 @@
 package gadm
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"net/http"
 	"text/template"
 	"time"
@@ -14,8 +16,9 @@ type Security struct {
 }
 
 func NewSecurity(admin *Admin, db *gorm.DB) *Security {
+	sc := "Account"
 	S := new(Security)
-	S.BaseView = NewView(Menu{Name: gettext("Account"), Category: "Account"})
+	S.BaseView = NewView(Menu{Name: gettext("Account")})
 	S.Blueprint = &Blueprint{
 		Endpoint: "security",
 		Children: map[string]*Blueprint{
@@ -27,25 +30,42 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 		},
 	}
 
-	// admin.AddView(S)
-	admin.Register(S.Blueprint)
-	S.admin = admin
+	if db != nil {
+		db.AutoMigrate(&User{}, &Role{})
+		var c int64
+		if db.Model(Role{}).Count(&c).Error == nil && c == 0 {
+			ra := Role{ID: 1, Name: "admin"}
+			rn := Role{ID: 2, Name: "user"}
+			db.Create(&ra)
+			db.Create(&rn)
+			db.Create(&User{Email: "admin@gadm.com",
+				Password: "md5:" + passwdhash("admin"),
+				Active:   true,
+				Roles:    []Role{ra, rn}})
+		}
+	}
 
-	tm := &Menu{Name: "Theme", Category: "Theme"}
+	admin.AddView(S)
+	// admin.Register(S.Blueprint)
+	// S.admin = admin
+
+	tm := &Menu{Name: "Theme"}
 	for _, name := range themes {
 		tm.Children = append(tm.Children, &Menu{
 			Name: name,
 			Path: must(S.Blueprint.GetUrl("admin.theme", "name", name))})
 	}
+	S.Menu.AddMenu(tm, sc)
 
-	if db != nil {
-		db.AutoMigrate(&User{}, &Role{})
-	}
+	admin.AddView(NewModelView(Role{}, db), sc)
+	vu := NewModelView(User{}, db).
+		Preloads("Roles")
+	admin.AddView(vu, sc)
 
-	S.Menu.AddMenu(tm, "Account")
-	S.Menu.AddMenu(&Menu{Name: "SQL Console", Path: must(S.Blueprint.GetUrl("admin.console"))}, "Account")
-	S.Menu.AddMenu(&Menu{Name: "Trace", Path: must(S.Blueprint.GetUrl("admin.trace"))}, "Account")
-	S.Menu.AddMenu(&Menu{Name: "Generate", Path: must(S.Blueprint.GetUrl("admin.generate"))}, "Account")
+	S.Menu.Children = append(S.Menu.Children,
+		&Menu{Name: "SQL Console", Path: must(S.Blueprint.GetUrl("admin.console"))},
+		&Menu{Name: "Trace", Path: must(S.Blueprint.GetUrl("admin.trace"))},
+		&Menu{Name: "Generate", Path: must(S.Blueprint.GetUrl("admin.generate"))})
 	return S
 }
 
@@ -75,24 +95,28 @@ func (S *Security) Check(w http.ResponseWriter, r *http.Request) {
 	// }
 }
 
+// return md5(password + "gadm")
+func passwdhash(t string) string {
+	x := md5.New().Sum([]byte(t + ":gadm"))
+	return hex.EncodeToString(x)
+}
+
 type User struct {
-	Id    int    `gorm:"primaryKey;autoincrement"`
+	ID    int    `gorm:"primaryKey;autoincrement"`
 	Email string `gorm:"uniqueIndex;not null;size:255"`
 	// Username is important since shouldn't expose email to other users in most cases.
 	Username    string `gorm:"size:255"`
 	Password    string `gorm:"not null;size:255"`
 	Active      bool   `gorm:"not null;default:false"`
-	ActivatedAt null.Time
+	ActivatedAt *time.Time
 
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime:nano"`
-
-	// confirmable
-	ConfirmedAt null.Time
+	CreatedAt   *time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   *time.Time `gorm:"autoUpdateTime:nano"`
+	ConfirmedAt *time.Time
 
 	// trackable
-	LastLoginAt    null.Time
-	CurrentLoginAt null.Time
+	LastLoginAt    *time.Time
+	CurrentLoginAt *time.Time
 	LastLoginIp    null.String `gorm:"size:64"`
 	CurrentLoginIp null.String `gorm:"size:64"`
 	LoginCount     int         `gorm:"default:0"`
@@ -100,12 +124,14 @@ type User struct {
 }
 
 type Role struct {
-	Id          int    `gorm:"primaryKey;autoincrement"`
+	ID          int    `gorm:"primaryKey;autoincrement"`
 	Name        string `gorm:"uniqueIndex;not null;size:64"`
 	Description string `gorm:"size:255"`
 }
 
-type register struct {
+func (r *Role) String() string { return r.Name }
+
+type register_form struct {
 	Username   string `form:"username"`
 	Email      string `form:"email"`
 	Password   string `form:"password"`

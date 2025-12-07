@@ -76,7 +76,8 @@ func NewAdmin(name string) *Admin {
 	// TODO: read lang from config
 	gotext.Configure("translations", "en", "admin")
 
-	A.security = NewSecurity(A, nil)
+	A.securityDB = "sqlite:security.db"
+	A.security = NewSecurity(A, must(Open(A.securityDB)))
 	return A
 }
 
@@ -96,6 +97,7 @@ type Admin struct {
 	mux               *http.ServeMux
 	indexTemplateFile string
 	theme             string
+	securityDB        string
 	security          *Security
 }
 
@@ -117,14 +119,14 @@ func (A *Admin) Register(b *Blueprint) {
 	b.registerTo(A.mux, A.Blueprint.Path)
 }
 
-func (A *Admin) AddView(view View) View {
+func (A *Admin) AddView(view View, menuCategory ...string) View {
 	view.setAdmin(A)
 
 	if b := view.GetBlueprint(); b != nil {
 		A.views = append(A.views, view)
 		A.Register(b)
 
-		A.addViewToMenu(view)
+		A.addViewToMenu(view, menuCategory...)
 	}
 
 	if mv, ok := view.(*ModelView); ok {
@@ -146,13 +148,13 @@ func (A *Admin) FindView(endpoint string) View {
 	return v
 }
 
-func (A *Admin) addViewToMenu(view View) {
+func (A *Admin) addViewToMenu(view View, menuCategory ...string) {
 	if menu := view.GetMenu(); menu != nil {
 		// CAUTION: patch MenuItem.Path
 		if menu.Path == "" {
 			menu.Path, _ = A.Blueprint.GetUrl(view.GetBlueprint().Endpoint + ".index")
 		}
-		A.BaseView.Menu.AddMenu(menu, menu.Category)
+		A.BaseView.Menu.AddMenu(menu, menuCategory...)
 	}
 }
 func (A *Admin) freeze() {

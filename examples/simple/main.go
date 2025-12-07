@@ -11,7 +11,7 @@ type MyView struct {
 
 func NewMyView() *MyView {
 	v := &MyView{
-		BaseView: gadm.NewView(gadm.Menu{Name: "View3", Category: "Test"}),
+		BaseView: gadm.NewView(gadm.Menu{Name: "View3"}),
 	}
 	v.Expose("/", v.indexHandler)
 	return v
@@ -24,12 +24,12 @@ func (M *MyView) indexHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	admin := gadm.NewAdmin("Example: Simple Views")
 
-	v := gadm.NewView(gadm.Menu{Name: "View1", Category: "Test"})
+	v := gadm.NewView(gadm.Menu{Name: "View1"})
 	v.Expose("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("raw view"))
 	})
 	admin.AddView(v)
-	admin.AddView(gadm.NewView(gadm.Menu{Category: "Test", Name: "View2"}))
+	admin.AddView(gadm.NewView(gadm.Menu{Name: "View2"}))
 	admin.AddView(NewMyView())
 	admin.Run()
 }

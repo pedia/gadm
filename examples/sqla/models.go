@@ -49,14 +49,14 @@ func (c *Company) String() string { return c.Name }
 
 // has one https://gorm.io/docs/has_one.html
 type CreditCard struct {
-	Id     uint   `gorm:"primaryKey;autoincrement"`
-	Number string `gorm:"size:32"`
-	UserID uint
+	Id       uint   `gorm:"primaryKey;autoincrement"`
+	Number   string `gorm:"size:32"`
+	HolderID uint
 }
-type User struct {
+type Holder struct {
 	Id         uint `gorm:"primaryKey;autoincrement"`
 	Name       string
-	CreditCard CreditCard `gorm:"foreignKey:UserID"`
+	CreditCard CreditCard `gorm:"foreignKey:HolderID"`
 }
 
 // has many https://gorm.io/docs/has_many.html
@@ -100,7 +100,7 @@ type Dog struct {
 
 var Models = []any{&AllTyped{},
 	&Company{}, &Employee{},
-	&User{}, &CreditCard{},
+	&Holder{}, &CreditCard{},
 	&Account{},
 	&Address{},
 	&Language{}, &Student{},
@@ -129,8 +129,8 @@ var Samples = []any{
 	&Company{Id: 32, Name: "chat ltd"},
 	&Employee{Id: 2, Name: "Alice", CompanyId: null.NewInt(31, true)},
 	&Employee{Id: 3, Name: "Bob", CompanyId: null.NewInt(31, true)},
-	&User{Id: 1, Name: "Alice"},
-	&CreditCard{Id: 1, Number: "2392423948234", UserID: 1},
+	&Holder{Id: 1, Name: "Alice"},
+	&CreditCard{Id: 1, Number: "2392423948234", HolderID: 1},
 	&Account{Id: 1, Name: "Alice"},
 	&Address{Id: 2, AccountID: 1, Number: "29-1"},
 	&Address{Id: 3, AccountID: 1, Number: "401"},

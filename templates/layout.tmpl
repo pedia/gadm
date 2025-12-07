@@ -6,6 +6,7 @@
         {{- end -}}
     {{- range .Children -}}
         {{- if .Children }}
+            {{ if ne .Name "Account" }}
             <li class="dropdown{{ if .Class }} {{ .Class }}{{ end }}">
                 <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="javascript:void(0)">{{ .Name }}<i class="glyphicon glyphicon-chevron-down small"></i></a>
                 <ul class="dropdown-menu">
@@ -14,6 +15,7 @@
                     {{- end }}
                 </ul>
             </li>
+            {{ end }}
         {{- else }}
             <li{{ if .Class }} class="{{ .Class }}"{{ end }}>
                 <a class="nav-link" href="{{ .Path }}">{{ .Name }}</a>
@@ -47,7 +49,7 @@
 
 {{ define "layout_messages" }}
     {{- range get_flashed_messages }}
-        <div class="alert alert-{{ .Category }} alert-dismissable">
+        <div class="alert alert-{{ .Name }} alert-dismissable">
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
             {{ .Data }}
         </div>

@@ -86,13 +86,12 @@ type queryArg struct {
 }
 
 // TODO: ensure m not ptr
-func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
+// ep: endpoint for this view
+func NewModelView(m any, db *gorm.DB, eps ...string) *ModelView {
 	model := NewModel(m)
 
-	cate := firstOr(category, "")
-
 	mv := ModelView{
-		BaseView:               NewView(Menu{Name: model.label(), Category: cate}),
+		BaseView:               NewView(Menu{Name: model.label()}),
 		db:                     db,
 		Model:                  model,
 		can_create:             true,
@@ -109,8 +108,8 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 
 	mv.Blueprint = &Blueprint{
 		Name:     model.label(),
-		Endpoint: model.endpoint(),
-		Path:     "/" + model.endpoint(),
+		Endpoint: firstOr(eps, model.endpoint()),
+		Path:     "/" + firstOr(eps, model.endpoint()),
 		Children: map[string]*Blueprint{
 			// In flask-admin use `view.index`. Should use `view.index_view` in `gadmin`
 			"index":        {Endpoint: "index", Path: "/", Handler: mv.indexHandler},
@@ -936,8 +935,8 @@ func (V *ModelView) Render(w http.ResponseWriter, r *http.Request, name string, 
 		"get_flashed_messages": func() []any {
 			return V.admin.Session(r).Flashes()
 		},
-		"get_url": func(endpoint string, args ...any) string {
-			return must(V.Blueprint.GetUrl(endpoint, args...))
+		"get_url": func(endpoint string, args ...any) (string, error) {
+			return V.Blueprint.GetUrl(endpoint, args...)
 		},
 		"csrf_token":  func() string { return csrf.Token(r) },
 		"list_form":   V.inline_form(csrf.Token(r)),

@@ -179,9 +179,8 @@ func (b *Blueprint) MarshalJSON() ([]byte, error) {
 
 // Tree liked structure
 type Menu struct {
-	Category string // tree liked
-	Name     string
-	Path     string
+	Name string
+	Path string
 
 	Icon  string
 	Class string
@@ -193,34 +192,22 @@ type Menu struct {
 	Children []*Menu
 }
 
-// TODO: AddCategory/AddLink/AddMenuItem
 func (M *Menu) AddMenu(i *Menu, category ...string) {
-	if i.Category == "" {
-		if i.Path == "" && !strings.HasPrefix(i.Path, "/") {
-			np := "/" + strings.ToLower(i.Name)
-			log.Printf(`menu(%s) path '%s' invalid, fixed to '%s'`, i.Name, i.Path, np)
-			i.Path = np
-		}
+	parent := M.find(firstOr(category, M.Name))
+	if parent == nil {
+		parent = &Menu{Name: firstOr(category)}
+		M.Children = append(M.Children, parent)
 	}
-
-	parent := M.find(firstOr(category, ""))
-	if parent != nil {
-		parent.Children = append(parent.Children, i)
-	} else {
-		// stub, create a new stub or self is stub
-		stub := &Menu{Name: i.Category, Category: i.Category}
-		stub.Children = append(stub.Children, i)
-		M.Children = append(M.Children, stub)
-	}
+	parent.Children = append(parent.Children, i)
 }
 
-func (M *Menu) find(cate string) *Menu {
-	if M.Category == cate {
+func (M *Menu) find(name string) *Menu {
+	if M.Name == name {
 		return M
 	}
 
 	c, _ := lo.Find(M.Children, func(m *Menu) bool {
-		return m.Category == cate
+		return m.Name == name
 	})
 	return c
 }

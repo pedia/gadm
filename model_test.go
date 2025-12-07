@@ -20,16 +20,16 @@ import (
 func views(db *gorm.DB) []*ModelView {
 	return []*ModelView{
 		NewModelView(sqla.AllTyped{}, db),
-		NewModelView(sqla.Company{}, db, "Association"),
-		NewModelView(sqla.Employee{}, db, "Association"),
-		NewModelView(sqla.CreditCard{}, db, "Association"),
-		NewModelView(sqla.User{}, db, "Association"),
-		NewModelView(sqla.Address{}, db, "Association"),
-		NewModelView(sqla.Account{}, db, "Association"),
-		NewModelView(sqla.Language{}, db, "Association"),
-		NewModelView(sqla.Student{}, db, "Association"),
-		NewModelView(sqla.Toy{}, db, "Association"),
-		NewModelView(sqla.Dog{}, db, "Association"),
+		NewModelView(sqla.Company{}, db),
+		NewModelView(sqla.Employee{}, db),
+		NewModelView(sqla.CreditCard{}, db),
+		NewModelView(sqla.Holder{}, db),
+		NewModelView(sqla.Address{}, db),
+		NewModelView(sqla.Account{}, db),
+		NewModelView(sqla.Language{}, db),
+		NewModelView(sqla.Student{}, db),
+		NewModelView(sqla.Toy{}, db),
+		NewModelView(sqla.Dog{}, db),
 	}
 }
 
