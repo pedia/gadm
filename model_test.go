@@ -83,15 +83,13 @@ func TestModel(t *testing.T) {
 		is.Equal(map[string]string{"id": "3"}, m.where("3"))
 	}
 
-	// protype
+	// prototype
 	o := any(sqla.AllTyped{Name: ""})
 	rv := reflect.ValueOf(o)
 	for _, f := range m.schema.Fields {
 		fv := rv.FieldByName(f.Name)
 		is.True(fv.IsValid())
-		// fmt.Printf("%s %v\n", f.Name, fv.Interface())
 	}
-	// is.NotNil(v1)
 
 	// dv1 := r1.GetDisplayValue(m.Fields[8])
 	// is.Equal("9527", dv1)
