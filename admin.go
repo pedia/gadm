@@ -191,7 +191,7 @@ func (A *Admin) staticURL(filename, ver string) string {
 // model.create_view
 // .create_view
 func (A *Admin) UrlFor(model, endpoint string, args ...any) (string, error) {
-	prefix := ""
+	var prefix string
 	b := A.Blueprint
 	if model != "" {
 		cb, ok := A.Blueprint.Children[model]
@@ -216,7 +216,7 @@ func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// for http
+	// for http://
 	r = csrf.PlaintextHTTPRequest(r)
 
 	// make sure session put in r.Context
@@ -238,7 +238,7 @@ func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// trace
 	if A.tracer != nil {
-		defer A.tracer.CheckTrace(r)
+		A.tracer.CheckTrace(r)
 	}
 }
 
@@ -311,7 +311,7 @@ func (A *Admin) pingHandler(w http.ResponseWriter, r *http.Request) {
 func (A *Admin) debugHandler(w http.ResponseWriter, r *http.Request) {
 	cv := r.Context().Value(csrf.PlaintextHTTPContextKey)
 	if cv == nil {
-		panic("not found PlaintextHTTPContextKey")
+		panic("PlaintextHTTPContextKey miss")
 	}
 
 	ReplyJson(w, 200, A.dict())
@@ -379,6 +379,7 @@ func (A *Admin) SetIndexTemplateFile(nfn string) {
 	A.indexTemplateFile = nfn
 }
 
+// generate handler
 type wsWriter struct {
 	*websocket.Conn
 }
@@ -428,6 +429,7 @@ func (A *Admin) generateHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 }
+
 func (A *Admin) consoleHandler(w http.ResponseWriter, r *http.Request) {
 	result := &Result{Query: DefaultQuery(), Rows: []*Row{}}
 	var name string
@@ -467,7 +469,6 @@ func (A *Admin) traceHandler(w http.ResponseWriter, r *http.Request) {
 	if A.tracer != nil {
 		m["entries"] = A.tracer.Entries()
 	}
-
 	A.Render(w, r, "templates/trace.tmpl", nil, m)
 }
 

@@ -38,7 +38,6 @@ type ModelView struct {
 	column_list          []string
 	column_exclude_list  []string
 	column_editable_list []string
-	// TODO: id, name, dept.id
 	column_sortable_list []string
 	column_descriptions  map[string]string
 
@@ -621,7 +620,6 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 		"data":                     result.Rows, // TODO: remove
 		"result":                   result,
 		"request":                  rd(r),
-		"get_pk_value":             V.get_pk_value,
 		"column_display_pk":        V.column_display_pk,
 		"column_display_actions":   V.column_display_actions,
 		"column_extra_row_actions": nil,

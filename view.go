@@ -86,7 +86,6 @@ func (V *BaseView) AddFlash(r *http.Request, flash flash) {
 }
 
 func (V *BaseView) dict(r *http.Request, others ...map[string]any) map[string]any {
-	// TODO: remove r
 	o := map[string]any{
 		"path":               r.URL.Path,
 		"name":               V.Menu.Name,

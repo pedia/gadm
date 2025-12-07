@@ -79,7 +79,7 @@ func TestModel(t *testing.T) {
 		is.Equal("foo", r1.Fields[1].Value)
 		// is.True(r1["is_normal"].(bool))
 
-		is.Equal("3", m.get_pk_value(r1))
+		is.Equal("3", r1.GetPkValue())
 		is.Equal(map[string]string{"id": "3"}, m.where("3"))
 	}
 
@@ -105,7 +105,7 @@ func TestModel(t *testing.T) {
 	is.Nil(tx0.Error)
 
 	m1 := NewRow(m.Fields, a2[0])
-	rowid := m.get_pk_value(m1)
+	rowid := m1.GetPkValue()
 
 	// update
 	m1.Map["email"] = "reachable@foo.com"

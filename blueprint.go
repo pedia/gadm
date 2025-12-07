@@ -96,8 +96,6 @@ func (b *Blueprint) registerTo(mux *http.ServeMux, parent string) {
 		fs := http.FileServer(http.Dir(b.StaticFolder))
 		mux.Handle(parent+b.Path, // minified.Middleware(
 			http.StripPrefix(parent+b.Path, fs))
-
-		// TODO: add an endpoint
 	}
 
 	// Avoid `ServerMux` duplicated `Path`

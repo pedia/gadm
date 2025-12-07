@@ -70,7 +70,6 @@ var Namer = schema.NamingStrategy{SingularTable: true}
 var schemaStore = sync.Map{}
 
 func NewModel(m any) *Model {
-	// TODO: option SingularTable
 	s := must(schema.Parse(m, &schemaStore, Namer))
 	fs := lo.Map(s.Fields, func(field *schema.Field, _ int) *Field {
 		return &Field{Field: field, Label: strings.Join(camelcase.Split(field.Name), " ")}
@@ -110,9 +109,6 @@ func (m *Model) find(name string) *Field {
 // Return all field can be sorted
 // exclude relationship fields
 func (m *Model) sortableColumns() []string { return m.schema.DBNames }
-
-// TODO: remove
-func (m *Model) get_pk_value(row *Row) string { return row.GetPkValue() }
 
 // single primarykey, rowid: id
 // multiple primarykey, rowid like: pk1,pk2
