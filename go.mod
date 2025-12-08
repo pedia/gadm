@@ -50,7 +50,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.4 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect

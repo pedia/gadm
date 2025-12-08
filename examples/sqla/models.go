@@ -56,7 +56,7 @@ type CreditCard struct {
 type Holder struct {
 	Id         uint `gorm:"primaryKey;autoincrement"`
 	Name       string
-	CreditCard CreditCard `gorm:"foreignKey:HolderID"`
+	CreditCard *CreditCard `gorm:"foreignKey:HolderID"`
 }
 
 // has many https://gorm.io/docs/has_many.html

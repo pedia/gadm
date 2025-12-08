@@ -134,7 +134,6 @@ func NewModelView(m any, db *gorm.DB, eps ...string) *ModelView {
 		"templates/base.tmpl",
 		"templates/layout.tmpl",
 		"templates/lib.tmpl",
-		"templates/master.tmpl",
 		"templates/model_layout.tmpl",
 		"templates/form.tmpl",
 		"templates/model_row_actions.tmpl",

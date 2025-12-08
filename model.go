@@ -167,7 +167,11 @@ func (f *Field) IsStruct() bool {
 	return f.DBName == "" && f.Schema != nil && !f.IsSlice()
 }
 
-// TODO: remove
+func (f *Field) IsNil() bool {
+	return isNil(f.Value)
+}
+
+// Struct's PkValue
 func (f *Field) GetPkValue() string {
 	vs := []string{}
 	for _, pkf := range f.Schema.PrimaryFields {

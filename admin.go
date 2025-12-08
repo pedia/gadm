@@ -1,6 +1,7 @@
 package gadm
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -93,7 +94,7 @@ type Admin struct {
 	key               []byte
 	sessionKey        string
 	store             sessions.Store
-	csrf              func(http.Handler) http.Handler
+	csrf              Middleware
 	mux               *http.ServeMux
 	indexTemplateFile string
 	theme             string
@@ -209,6 +210,57 @@ func (A *Admin) UrlFor(model, endpoint string, args ...any) (string, error) {
 	return prefix + res, nil
 }
 
+func withSession() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// for http://
+			r = csrf.PlaintextHTTPRequest(r)
+
+			// make sure session put in r.Context
+			_ = sessions.GetRegistry(r)
+			next.ServeHTTP(w, r)
+
+			// save sesstion before flush
+			if err := sessions.Save(r, w); err != nil {
+				panic(err)
+			}
+		})
+	}
+}
+
+func withLog() Middleware {
+	return func(next http.Handler) http.Handler {
+		return handlers.LoggingHandler(os.Stdout, next)
+	}
+}
+
+func (A *Admin) withTrace() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+
+			if A.tracer != nil {
+				A.tracer.CheckTrace(r)
+			}
+		})
+	}
+}
+
+func (A *Admin) withAccount() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if uid, ok := A.Session(r).Values["uid"]; ok {
+				if uid, ok := uid.(int); ok {
+					ctx := context.WithValue(r.Context(), currentUserKey, A.security.getUser(uid))
+					*r = *r.WithContext(ctx)
+				}
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/admin/static/") ||
 		strings.HasPrefix(r.URL.Path, "/.well-known/") {
@@ -216,30 +268,15 @@ func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// for http://
-	r = csrf.PlaintextHTTPRequest(r)
-
-	// make sure session put in r.Context
-	_ = sessions.GetRegistry(r)
-
-	cw := NewCachedWriter(w)
-	// csrf protect
-	handlers.LoggingHandler(
-		os.Stdout,
-		A.csrf(A.mux),
-	).ServeHTTP(cw, r)
-
-	// save sesstion before flush
-	if err := sessions.Save(r, cw); err != nil {
-		panic(err)
-	}
-
-	cw.Flush()
-
-	// trace
-	if A.tracer != nil {
-		A.tracer.CheckTrace(r)
-	}
+	// CAUTION: reverse order
+	Use(A.mux,
+		A.withAccount(),
+		A.withTrace(),
+		withCache(),
+		withSession(),
+		A.csrf,
+		withLog(),
+	).ServeHTTP(w, r)
 }
 
 func (A *Admin) Run() {
@@ -318,6 +355,11 @@ func (A *Admin) debugHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", ContentTypeUtf8Html)
+
+	if r.URL.Query().Get("a") == "1" {
+		A.Session(r).AddFlash("hohoho")
+	}
+
 	tx, err := template.New("debug").
 		Option("missingkey=error").
 		Funcs(A.funcs(template.FuncMap{
@@ -328,7 +370,11 @@ func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = tx.Lookup("debug.tmpl").Execute(w, A.dict())
+	err = tx.Lookup("debug.tmpl").Execute(w, A.dict(map[string]any{
+		"query":        r.URL.Query(),
+		"session":      A.Session(r),
+		"current_user": CurrentUser(r),
+	}))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	}

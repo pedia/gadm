@@ -193,6 +193,16 @@ func (cw *cachedWriter) Flush() {
 	cw.ResponseWriter.Write(cw.cache.Bytes())
 }
 
+func withCache() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cw := NewCachedWriter(w)
+			defer cw.Flush()
+			next.ServeHTTP(cw, r)
+		})
+	}
+}
+
 // In Release, cache parsed template
 // In Debug, parse every time
 type groupTempl struct {

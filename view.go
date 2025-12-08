@@ -81,8 +81,7 @@ func (V *BaseView) setAdmin(admin *Admin) { V.admin = admin }
 
 // category: success, danger, error, info
 func (V *BaseView) AddFlash(r *http.Request, flash flash) {
-	sess := V.admin.Session(r)
-	sess.AddFlash(flash)
+	V.admin.Session(r).AddFlash(flash)
 }
 
 func (V *BaseView) dict(r *http.Request, others ...map[string]any) map[string]any {

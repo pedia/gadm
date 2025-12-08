@@ -10,6 +10,7 @@ flashed: {{get_flashed_messages}}
 {{end}}
 
 session: {{.session}}
+user: {{.current_user.ID}}
 
 {{range $k, $v := .}}{{$k}}: {{$v|typeOf}}
 {{end}}

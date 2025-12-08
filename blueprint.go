@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gadm/isdebug"
 	"log"
 	"net/http"
 	"slices"
@@ -45,6 +46,9 @@ type Blueprint struct {
 
 // like flask `Blueprint.Register`
 func (b *Blueprint) AddChild(child *Blueprint) (err error) {
+	if child.Path != "" && !strings.HasPrefix(child.Path, "/") {
+		fmt.Printf("Blueprint(%s) Path: %s not valid", child.Endpoint, child.Path)
+	}
 	if b.Children == nil {
 		b.Children = map[string]*Blueprint{}
 	}
@@ -80,7 +84,9 @@ func (b *Blueprint) registerTo(mux *http.ServeMux, parent string) {
 			log.Printf("warning: Blueprint(%s path: %s) not start with /", b.Name, b.Path)
 		}
 
-		// log.Printf("%s handle %s", b.Name, parent+b.Path)
+		if isdebug.On {
+			log.Printf("%s handle %s", b.Name, parent+b.Path)
+		}
 		if strings.HasSuffix(b.Path, "/") {
 			mux.HandleFunc(parent+b.Path+"{$}", b.Handler)
 		} else {
