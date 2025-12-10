@@ -378,7 +378,6 @@ import (
 	"testing"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestDaoModels(t *testing.T) {
@@ -387,14 +386,10 @@ func TestDaoModels(t *testing.T) {
 		_ = os.Chdir("..")
 	}
 
-	db, err := gadm.Parse("{{.Url}}").Open(
-		&gorm.Config{
-			NamingStrategy: gadm.Namer,
-			Logger:         logger.Default.LogMode(logger.Info)})
+	db, err := gadm.Open("{{.Url}}")
 	if err != nil {
 		return
 	}
-
 	
 	var models = []any{ {{range .Tables}}
 		&{{.Name}}{}, 

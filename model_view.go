@@ -123,12 +123,10 @@ func NewModelView(m any, db *gorm.DB, eps ...string) *ModelView {
 			"delete_view":  {Endpoint: "delete_view", Path: "/delete", Handler: mv.deleteHandler},
 			// not .export_view
 			"export": {Endpoint: "export", Path: "/export", Handler: mv.exportHandler},
-			"debug":  {Endpoint: "debug", Path: "/debug", Handler: mv.debugHandler},
 			// for json
 			"list": {Endpoint: "list", Path: "/list", Handler: mv.listJson},
 		},
 	}
-
 	mv.column_sortable_list = mv.sortableColumns()
 
 	mv.gt = NewGroupTempl(
@@ -561,21 +559,6 @@ func (V *ModelView) list_row_actions(r *http.Request) []Action {
 	return actions
 }
 
-func (V *ModelView) debugHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Query().Get("a") == "1" {
-		V.AddFlash(r, FlashSuccess(`Record was successfully deleted.
-1 records were successfully deleted.`))
-		V.redirect(w, r, "/admin/company")
-		return
-	}
-	w.Header().Set("foo", "bar")
-
-	V.Render(w, r, "debug.tmpl", nil, map[string]any{
-		"query":     V.queryFrom(r),
-		"menu":      V.Menu.dict(r.URL.Path, CurrentRoles(r)),
-		"blueprint": V.Blueprint,
-	})
-}
 func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 	q := V.queryFrom(r)
 

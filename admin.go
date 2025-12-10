@@ -61,7 +61,6 @@ func NewAdmin(name string) *Admin {
 		Handler:  A.indexHandler,
 		Children: map[string]*Blueprint{
 			"index":      {Endpoint: "index", Path: "/", Handler: A.indexHandler},
-			"debug":      {Endpoint: "debug", Path: "/debug.json", Handler: A.debugHandler},
 			"debug.html": {Endpoint: "debug.html", Path: "/debug.html", Handler: A.debugHtmlHandler},
 			"generate":   {Endpoint: "generate", Path: "/generate", Handler: A.generateHandler},
 			"console":    {Endpoint: "console", Path: "/console", Handler: A.consoleHandler},
@@ -350,14 +349,6 @@ func (A *Admin) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (A *Admin) pingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ping"))
-}
-func (A *Admin) debugHandler(w http.ResponseWriter, r *http.Request) {
-	cv := r.Context().Value(csrf.PlaintextHTTPContextKey)
-	if cv == nil {
-		panic("PlaintextHTTPContextKey miss")
-	}
-
-	ReplyJson(w, 200, A.dict(r))
 }
 func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", ContentTypeUtf8Html)
