@@ -1,10 +1,10 @@
 package gadm
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"net/http"
-	"text/template"
 	"time"
 
 	"github.com/go-playground/form/v4"
@@ -20,6 +20,7 @@ type Security struct {
 
 func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 	cate := "Account"
+	adminroles := []string{"admin"}
 
 	S := &Security{db: db}
 	S.BaseView = NewView(Menu{Name: gettext("Account")})
@@ -50,7 +51,6 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 				Roles:    []Role{ra, rn}})
 		}
 	}
-
 	admin.AddView(S)
 
 	tm := &Menu{Name: "Theme"}
@@ -61,17 +61,25 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 	}
 	S.Menu.AddMenu(tm, cate)
 
-	admin.AddView(NewModelView(Role{}, db), cate)
+	vr := NewModelView(Role{}, db)
+	vr.SetRoles(adminroles...)
+	admin.AddView(vr, cate)
+
 	vu := NewModelView(User{}, db).
 		Preloads("Roles").
 		SetColumnEditableList("email", "active").
 		SetColumnSearchableList("email", "username")
+	vu.SetRoles(adminroles...)
 	admin.AddView(vu, cate)
 
 	S.Menu.Children = append(S.Menu.Children,
-		&Menu{Name: "SQL Console", Path: must(S.Blueprint.GetUrl("admin.console"))},
-		&Menu{Name: "Trace", Path: must(S.Blueprint.GetUrl("admin.trace"))},
-		&Menu{Name: "Generate", Path: must(S.Blueprint.GetUrl("admin.generate"))})
+		&Menu{Name: "SQL Console", Roles: adminroles, Path: must(S.Blueprint.GetUrl("admin.console"))},
+		&Menu{Name: "Trace", Roles: adminroles, Path: must(S.Blueprint.GetUrl("admin.trace"))},
+		&Menu{Name: "Generate", Roles: adminroles, Path: must(S.Blueprint.GetUrl("admin.generate"))},
+		&Menu{Name: "Register", Path: must(S.Blueprint.GetUrl("security.register"))},
+		&Menu{Name: "Login", Path: must(S.Blueprint.GetUrl("security.login"))},
+		&Menu{Name: "Logout", Path: must(S.Blueprint.GetUrl("security.logout"))},
+	)
 	return S
 }
 
@@ -101,27 +109,7 @@ func (S *Security) loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	S.Render(w, r, "templates/security/login_user.tmpl",
-		template.FuncMap{
-			// "csrf_token":           func() string { return csrf.Token(r) },
-			// "get_flashed_messages": func() []any { return S.admin.Session(r).Flashes() },
-			// "gettext": gettext,
-			// "get_url": S.Blueprint.GetUrl,
-		}, map[string]any{
-			"path":      r.URL.Path,
-			"name":      S.Menu.Name,
-			"extra_css": []string{},
-			"extra_js":  []string{}, // "a.js", "b.js"}
-			"admin":     S.admin.dict(r),
-
-			"admin_fluid_layout": true,
-
-			"editable_columns": nil,
-			// "category":  S.Menu.Category,
-			// "name":      S.Menu.Name,
-			// "extra_css": []string{},
-			// "extra_js":  []string{}, // "a.js", "b.js"}
-		})
+	S.Render(w, r, "templates/security/login_user.tmpl", nil, nil)
 }
 func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -152,36 +140,10 @@ func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	S.Render(w, r, "templates/security/register_user.tmpl",
-		template.FuncMap{
-			// "csrf_token":           func() string { return csrf.Token(r) },
-			// "get_flashed_messages": func() []any { return S.admin.Session(r).Flashes() },
-			// "gettext": gettext,
-			// "get_url": S.Blueprint.GetUrl,
-		}, map[string]any{
-			"path":      r.URL.Path,
-			"name":      S.Menu.Name,
-			"extra_css": []string{},
-			"extra_js":  []string{}, // "a.js", "b.js"}
-			"admin":     S.admin.dict(r),
-
-			"admin_fluid_layout": true,
-
-			"editable_columns": nil,
-			// "category":  S.Menu.Category,
-			// "name":      S.Menu.Name,
-			// "extra_css": []string{},
-			// "extra_js":  []string{}, // "a.js", "b.js"}
-		})
+	S.Render(w, r, "templates/security/register_user.tmpl", nil, nil)
 }
 func (S *Security) forgotPasswordHandler(w http.ResponseWriter, r *http.Request)   {}
 func (S *Security) sendConfirmationHandler(w http.ResponseWriter, r *http.Request) {}
-
-func (S *Security) Check(w http.ResponseWriter, r *http.Request) {
-	// if !logined(r) {
-	//   redirect to security.login
-	// }
-}
 
 func (S *Security) getUser(uid int) *User {
 	var u User
@@ -191,10 +153,19 @@ func (S *Security) getUser(uid int) *User {
 	return nil
 }
 func (S *Security) makeLogin(r *http.Request, uid int) {
-	S.admin.Session(r).Values["uid"] = uid
+	S.admin.Session(r).Values[currentUid] = uid
+	S.markSessionChanged(r)
 }
 func (S *Security) logout(r *http.Request) {
-	delete(S.admin.Session(r).Values, "uid")
+	ctx := context.WithValue(r.Context(), currentUserKey, nil)
+	*r = *r.WithContext(ctx)
+
+	delete(S.admin.Session(r).Values, currentUid)
+
+	S.markSessionChanged(r)
+}
+func (S *Security) markSessionChanged(r *http.Request) {
+	S.admin.Session(r).Values[sessionChanged] = true
 }
 
 // return md5(password + "gadm")
@@ -242,7 +213,9 @@ type register_form struct {
 
 type contextKey string
 
-const currentUserKey contextKey = "cu"
+const currentUserKey contextKey = "cu" // context value *User
+const sessionChanged string = "sc"     // is session changed?
+const currentUid string = "u"          // map[u] = uid
 
 func CurrentUser(r *http.Request) *User {
 	a := r.Context().Value(currentUserKey)

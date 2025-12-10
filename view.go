@@ -86,7 +86,8 @@ func (V *BaseView) dict(r *http.Request, others ...map[string]any) map[string]an
 		"extra_js":           []string{}, // "a.js", "b.js"}
 		"admin":              V.admin.dict(r),
 		"admin_fluid_layout": true,
-		"csrf_token":         func() string { return csrf.Token(r) },
+		"current_user":       CurrentUser(r),
+		"editable_columns":   nil,
 	}
 
 	if len(others) > 0 {

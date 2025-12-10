@@ -183,12 +183,11 @@ func (b *Blueprint) MarshalJSON() ([]byte, error) {
 
 // Tree liked structure
 type Menu struct {
-	Name  string
-	Path  string
-	Icon  string
-	Class string
-	Roles []string
-
+	Name     string
+	Path     string
+	Icon     string
+	Class    string
+	Roles    []string
 	Children []*Menu
 }
 
@@ -214,13 +213,14 @@ func (M *Menu) find(name string) *Menu {
 
 func (M *Menu) dict(current_path string, user_roles []string) map[string]any {
 	return map[string]any{
-		"Name":         M.Name,
-		"Path":         M.Path,
-		"Icon ":        M.Icon,
-		"Class":        M.Class,
-		"IsActive":     M.Path != "" && (current_path == M.Path || strings.HasPrefix(current_path, M.Path)),
-		"IsVisible":    M.hasAccess(user_roles),
-		"IsAccessible": M.hasAccess(user_roles),
+		"Name":          M.Name,
+		"Path":          M.Path,
+		"Icon ":         M.Icon,
+		"LoginRequired": len(M.Roles) > 0,
+		"Class":         M.Class,
+		"IsActive":      M.Path != "" && (current_path == M.Path || strings.HasPrefix(current_path, M.Path)),
+		"IsVisible":     M.hasAccess(user_roles),
+		"IsAccessible":  M.hasAccess(user_roles),
 		"Children": lo.Map(M.Children, func(child *Menu, _ int) map[string]any {
 			return child.dict(current_path, user_roles)
 		}),

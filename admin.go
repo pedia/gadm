@@ -209,19 +209,30 @@ func (A *Admin) UrlFor(model, endpoint string, args ...any) (string, error) {
 	return prefix + res, nil
 }
 
-func withSession() Middleware {
+func (A *Admin) withSession() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// for http://
 			r = csrf.PlaintextHTTPRequest(r)
 
 			// make sure session put in r.Context
-			_ = sessions.GetRegistry(r)
+			registry := sessions.GetRegistry(r)
 			next.ServeHTTP(w, r)
 
+			changed := false
+			if sess, err := registry.Get(A.store, A.sessionKey); err == nil {
+				_, changed = sess.Values[sessionChanged]
+				if changed {
+					delete(sess.Values, sessionChanged)
+				}
+			}
+
 			// save sesstion before flush
-			if err := sessions.Save(r, w); err != nil {
-				panic(err)
+			if changed {
+				log.Println("save session")
+				if err := registry.Save(w); err != nil {
+					panic(err)
+				}
 			}
 		})
 	}
@@ -248,7 +259,7 @@ func (A *Admin) withTrace() Middleware {
 func (A *Admin) withAccount() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if uid, ok := A.Session(r).Values["uid"]; ok {
+			if uid, ok := A.Session(r).Values[currentUid]; ok {
 				if uid, ok := uid.(int); ok {
 					ctx := context.WithValue(r.Context(), currentUserKey, A.security.getUser(uid))
 					*r = *r.WithContext(ctx)
@@ -272,7 +283,7 @@ func (A *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		A.withAccount(),
 		A.withTrace(),
 		withCache(),
-		withSession(),
+		A.withSession(),
 		A.csrf,
 		withLog(),
 	).ServeHTTP(w, r)
@@ -319,7 +330,7 @@ var themes = []string{
 }
 
 func (A *Admin) dict(r *http.Request, others ...map[string]any) map[string]any {
-	o := map[string]any{
+	return merge(map[string]any{
 		"debug":     A.debug,
 		"security":  A.security,
 		"db":        len(A.dbs),
@@ -330,12 +341,7 @@ func (A *Admin) dict(r *http.Request, others ...map[string]any) map[string]any {
 		"swatch": A.theme,
 		"menu":   A.Menu.dict(r.URL.Path, CurrentRoles(r)),
 		"config": config,
-	}
-
-	if len(others) > 0 {
-		merge(o, others[0])
-	}
-	return o
+	}, firstOr(others))
 }
 
 func (A *Admin) indexHandler(w http.ResponseWriter, r *http.Request) {
