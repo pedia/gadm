@@ -53,7 +53,7 @@ func main() {
 
 	a.AddView(gadm.NewModelView(sqla.Toy{}, db), "Polymorphism")
 	vt := gadm.NewModelView(sqla.Dog{}, db).
-		Preloads("Toys")
+		Preloads("Toys").SetRoles("nobody")
 	a.AddView(vt, "Polymorphism")
 
 	a.BaseView.Menu.AddMenu(&gadm.Menu{Name: "Other", Path: "/other"}, "Other")

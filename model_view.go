@@ -230,13 +230,6 @@ type refer struct {
 	model  *Model
 }
 
-func Refer(a any, fields ...string) *refer {
-	return &refer{
-		model:  NewModel(a),
-		fields: fields,
-	}
-}
-
 func astoss(as []any) string {
 	return strings.Join(lo.Map(as, func(a any, _ int) string { return cast.ToString(a) }), ",")
 }
@@ -304,7 +297,7 @@ func (V *ModelView) AddLookupRefer(a any, fields ...string) *ModelView {
 	if V.lookupRefers == nil {
 		V.lookupRefers = map[string]*refer{}
 	}
-	rf := Refer(a, fields...)
+	rf := &refer{model: NewModel(a), fields: fields}
 	V.lookupRefers[rf.model.name()] = rf
 	return V
 }
@@ -481,7 +474,7 @@ func (V *ModelView) dict(r *http.Request, others ...map[string]any) map[string]a
 
 // Because `default_page_size`, should place here, not query.go
 func (V *ModelView) queryFrom(r *http.Request) *Query {
-	base, _ := V.GetBlueprint().GetUrl(".index")
+	base, _ := V.Blueprint.GetUrl(".index")
 	q := Query{default_page_size: V.page_size, PageSize: V.page_size,
 		base: base}
 	r.ParseForm()

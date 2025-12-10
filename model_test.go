@@ -1,17 +1,21 @@
 package gadm
 
 import (
+	"bytes"
 	"fmt"
 	"gadm/examples/sqla"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 
-	"github.com/glebarez/sqlite"
+	"github.com/gorilla/csrf"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/guregu/null.v4"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
@@ -214,7 +218,7 @@ func (ts *ModelTestSuite) TestModel() {
 func (ts *ModelTestSuite) TestModelView() {
 	v := ts.typedView
 
-	ts.is.NotEmpty(v.GetBlueprint().Children)
+	ts.is.NotEmpty(v.Blueprint.Children)
 
 	ts.is.Equal("/admin/alltyped/", must(v.Blueprint.GetUrl(".index_view")))
 	ts.is.Equal("/admin/alltyped/action", must(v.Blueprint.GetUrl(".action")))
@@ -245,17 +249,47 @@ func (ts *ModelTestSuite) TestModelView() {
 	ts.is.Equal("/admin/tag/?desc=1&sort=1", q3.Get("url"))
 }
 
-// func (S *ModelTestSuite) TestSession() {
-// 	is := assert.New(S.T())
-// 	S.admin.Register(&Blueprint{Endpoint: "bar", Path: "/bar",
-// 		Handler: func(w http.ResponseWriter, r *http.Request) {
-// 			CurrentSession(r).Set("bar", "hello")
-// 		}})
-// 	r := httptest.NewRequest("GET", "/admin/bar", nil)
-// 	w := httptest.NewRecorder()
-// 	S.admin.ServeHTTP(w, r)
-// 	is.Equal(200, w.Code)
-// }
+func (S *ModelTestSuite) TestSession() {
+	r := httptest.NewRequest("GET", "/admin/bar", nil)
+	w := httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(404, w.Code)
+
+	r = httptest.NewRequest("GET", "/admin/holder", nil)
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(301, w.Code)
+
+	r = httptest.NewRequest("GET", "/admin/holder/", nil)
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(200, w.Code)
+
+	r = httptest.NewRequest("POST", "/admin/holder/new", bytes.NewBufferString("name=simpson"))
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(403, w.Code)
+
+	mux := http.NewServeMux()
+	var token string
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token = csrf.Token(r)
+	}))
+	r = httptest.NewRequest("GET", "/", nil)
+	w = httptest.NewRecorder()
+	S.admin.csrf(mux).ServeHTTP(w, r)
+	ck, err := http.ParseSetCookie(w.Header().Get("set-cookie"))
+	S.is.Nil(err)
+	S.is.Equal("csrf", ck.Name)
+
+	bs := "name=simpson&csrf_token=" + url.QueryEscape(token)
+	r = httptest.NewRequest("POST", "/admin/holder/new", bytes.NewBufferString(bs))
+	r.AddCookie(ck)
+	r.Header.Add("content-type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(302, w.Code)
+}
 
 func (ts *ModelTestSuite) TestUrlStatusCode() {
 	ts.is.Equal("/admin/alltyped/", must(ts.admin.UrlFor("", "alltyped.index")))

@@ -183,15 +183,11 @@ func (b *Blueprint) MarshalJSON() ([]byte, error) {
 
 // Tree liked structure
 type Menu struct {
-	Name string
-	Path string
-
+	Name  string
+	Path  string
 	Icon  string
 	Class string
-
-	IsActive     bool // TODO:
-	IsVisible    bool
-	IsAccessible bool
+	Roles []string
 
 	Children []*Menu
 }
@@ -214,4 +210,43 @@ func (M *Menu) find(name string) *Menu {
 		return m.Name == name
 	})
 	return c
+}
+
+func (M *Menu) dict(current_path string, user_roles []string) map[string]any {
+	return map[string]any{
+		"Name":         M.Name,
+		"Path":         M.Path,
+		"Icon ":        M.Icon,
+		"Class":        M.Class,
+		"IsActive":     M.Path != "" && (current_path == M.Path || strings.HasPrefix(current_path, M.Path)),
+		"IsVisible":    M.hasAccess(user_roles),
+		"IsAccessible": M.hasAccess(user_roles),
+		"Children": lo.Map(M.Children, func(child *Menu, _ int) map[string]any {
+			return child.dict(current_path, user_roles)
+		}),
+	}
+}
+
+func (M *Menu) hasAccess(user_roles []string) bool {
+	if len(M.Roles) == 0 {
+		return true
+	}
+
+	for _, role := range user_roles {
+		if role == "admin" {
+			return true
+		}
+
+		if slices.Contains(M.Roles, role) {
+			return true
+		}
+	}
+
+	// check children
+	for _, child := range M.Children {
+		if child.hasAccess(user_roles) {
+			return true
+		}
+	}
+	return false
 }

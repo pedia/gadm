@@ -46,9 +46,8 @@ func NewAdmin(name string) *Admin {
 		key:         key,
 		sessionKey:  "sess",
 		store:       sessions.NewCookieStore(key),
-		csrf: csrf.Protect(key,
-			csrf.CookieName("csrf"), csrf.FieldName("csrf_token")),
-		mux: http.NewServeMux(),
+		csrf:        csrf.Protect(key, csrf.CookieName("csrf"), csrf.FieldName("csrf_token")),
+		mux:         http.NewServeMux(),
 
 		indexTemplateFile: "templates/index.tmpl",
 		theme:             "default", // "cyborg",
@@ -319,7 +318,7 @@ var themes = []string{
 	// "sandstone", "simplex", "sketchy", "spacelab", "yeti",
 }
 
-func (A *Admin) dict(others ...map[string]any) map[string]any {
+func (A *Admin) dict(r *http.Request, others ...map[string]any) map[string]any {
 	o := map[string]any{
 		"debug":     A.debug,
 		"security":  A.security,
@@ -329,7 +328,7 @@ func (A *Admin) dict(others ...map[string]any) map[string]any {
 		"blueprint": A.Blueprint,
 		// 'swatch' from flask-admin
 		"swatch": A.theme,
-		"menu":   A.BaseView.Menu,
+		"menu":   A.Menu.dict(r.URL.Path, CurrentRoles(r)),
 		"config": config,
 	}
 
@@ -340,7 +339,7 @@ func (A *Admin) dict(others ...map[string]any) map[string]any {
 }
 
 func (A *Admin) indexHandler(w http.ResponseWriter, r *http.Request) {
-	A.Render(w, r, A.indexTemplateFile, nil, A.dict())
+	A.Render(w, r, A.indexTemplateFile, nil, A.dict(r))
 }
 func (A *Admin) pingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ping"))
@@ -351,7 +350,7 @@ func (A *Admin) debugHandler(w http.ResponseWriter, r *http.Request) {
 		panic("PlaintextHTTPContextKey miss")
 	}
 
-	ReplyJson(w, 200, A.dict())
+	ReplyJson(w, 200, A.dict(r))
 }
 func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", ContentTypeUtf8Html)
@@ -370,7 +369,7 @@ func (A *Admin) debugHtmlHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = tx.Lookup("debug.tmpl").Execute(w, A.dict(map[string]any{
+	err = tx.Lookup("debug.tmpl").Execute(w, A.dict(r, map[string]any{
 		"query":        r.URL.Query(),
 		"session":      A.Session(r),
 		"current_user": CurrentUser(r),

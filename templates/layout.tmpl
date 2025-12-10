@@ -1,13 +1,14 @@
 {{ block "menu" .}}
         {{ with $m := . -}}
-            <li{{ if $m.Class }} class="{{ $m.Class }}"{{ end }}>
+            <li{{ if $m.Class }} class="{{ $m.Class }}{{ if .IsActive }} active{{ end }}"{{ end }}>
                 <a class="nav-link" href="{{ $m.Path }}">{{ $m.Name }}</a>
             </li>
         {{- end -}}
     {{- range .Children -}}
         {{- if .Children }}
             {{ if ne .Name "Account" }}
-            <li class="dropdown{{ if .Class }} {{ .Class }}{{ end }}">
+            {{ if .IsAccessible }}
+            <li class="{{ if .IsActive }}active {{ end }}dropdown{{ if .Class }} {{ .Class }}{{ end }}">
                 <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="javascript:void(0)">{{ .Name }}<i class="glyphicon glyphicon-chevron-down small"></i></a>
                 <ul class="dropdown-menu">
                     {{- range .Children -}}
@@ -15,6 +16,7 @@
                     {{- end }}
                 </ul>
             </li>
+            {{ end }}
             {{ end }}
         {{- else }}
             <li{{ if .Class }} class="{{ .Class }}"{{ end }}>
@@ -28,7 +30,7 @@
 {{ define "menu_item" }}
     {{/* dropleft, dropright */}}
     {{- if .Children }}
-            <li class="dropdown {{if .IsActive}}active{{end}} dropdown-submenu dropleft">
+            <li class="dropdown dropdown-submenu dropleft">
                 <a class="dropdown-toggle dropdown-item" data-toggle="dropdown" href="javascript:void(0)">
                     <span class=" dropdown-submenu dropleft"></span>{{ .Name }}
                     <i class="glyphicon glyphicon-chevron-right small"></i>

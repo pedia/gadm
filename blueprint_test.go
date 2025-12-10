@@ -85,3 +85,32 @@ func TestBlueprint(t *testing.T) {
 	is.Equal("/admin/foo/bar/", must(a.GetUrl("foo.bar.index")))
 	is.Equal("/admin/foo/bar/", must(f.GetUrl("foo.bar.index")))
 }
+
+func TestMenuAccess(t *testing.T) {
+	is := assert.New(t)
+	root := Menu{Path: "/admin/", Children: []*Menu{
+		{Path: "/admin/article/", Roles: []string{"editor"}},
+		{Path: "/admin/category/", Roles: []string{"user", "editor"}},
+		{Path: "/admin/foo/"},
+	}}
+	is.True(root.hasAccess([]string{"user"}))
+	is.True(root.hasAccess([]string{"editor"}))
+	is.True(root.hasAccess(nil))
+	is.False(root.Children[0].hasAccess([]string{"user"}))
+	is.True(root.Children[0].hasAccess([]string{"editor"}))
+	is.True(root.Children[1].hasAccess([]string{"user"}))
+	is.True(root.Children[1].hasAccess([]string{"editor"}))
+	is.True(root.Children[2].hasAccess([]string{"editor"}))
+
+	d := root.dict("/admin/", []string{"user", "editor"})
+	is.True(d["IsActive"].(bool))
+	is.True(d["IsVisible"].(bool))
+
+	d = root.Children[0].dict("/admin/", []string{"user", "editor"})
+	is.False(d["IsActive"].(bool))
+	is.True(d["IsVisible"].(bool))
+
+	d = root.dict("/admin/", []string{"user"})
+	is.True(d["IsActive"].(bool)) // weird
+	is.True(d["IsVisible"].(bool))
+}

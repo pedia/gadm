@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/samber/lo"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
@@ -38,6 +39,7 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 		db.AutoMigrate(&User{}, &Role{})
 		var c int64
 		if db.Model(Role{}).Count(&c).Error == nil && c == 0 {
+			// create demo data
 			ra := Role{ID: 1, Name: "admin"}
 			rn := Role{ID: 2, Name: "user"}
 			db.Create(&ra)
@@ -50,8 +52,6 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 	}
 
 	admin.AddView(S)
-	// admin.Register(S.Blueprint)
-	// S.admin = admin
 
 	tm := &Menu{Name: "Theme"}
 	for _, name := range themes {
@@ -75,8 +75,54 @@ func NewSecurity(admin *Admin, db *gorm.DB) *Security {
 	return S
 }
 
-func (S *Security) loginHandler(w http.ResponseWriter, r *http.Request)  {}
-func (S *Security) logoutHandler(w http.ResponseWriter, r *http.Request) {}
+func (S *Security) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	S.logout(r)
+	http.Redirect(w, r, must(S.Blueprint.GetUrl("admin.index")), http.StatusFound)
+}
+func (S *Security) loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+
+		email := r.PostFormValue("email")
+		password := r.PostFormValue("password")
+		if email == "" || password == "" {
+			S.AddFlash(r, FlashInfo(gettext("Miss email or password")))
+		} else {
+			var u User
+			tx := S.db.Preload("Roles").Find(&u, "email=? and password=? and active=true",
+				email, password_hash(password))
+			if tx.Error != nil || u.ID == 0 {
+				S.AddFlash(r, FlashInfo("Email or password wrong"))
+			} else {
+				S.AddFlash(r, FlashInfo(gettext("Logined")))
+				S.makeLogin(r, u.ID)
+				http.Redirect(w, r, must(S.Blueprint.GetUrl("admin.index")), http.StatusFound)
+			}
+		}
+	}
+
+	S.Render(w, r, "templates/security/login_user.tmpl",
+		template.FuncMap{
+			// "csrf_token":           func() string { return csrf.Token(r) },
+			// "get_flashed_messages": func() []any { return S.admin.Session(r).Flashes() },
+			// "gettext": gettext,
+			// "get_url": S.Blueprint.GetUrl,
+		}, map[string]any{
+			"path":      r.URL.Path,
+			"name":      S.Menu.Name,
+			"extra_css": []string{},
+			"extra_js":  []string{}, // "a.js", "b.js"}
+			"admin":     S.admin.dict(r),
+
+			"admin_fluid_layout": true,
+
+			"editable_columns": nil,
+			// "category":  S.Menu.Category,
+			// "name":      S.Menu.Name,
+			// "extra_css": []string{},
+			// "extra_js":  []string{}, // "a.js", "b.js"}
+		})
+}
 func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		r.ParseForm()
@@ -99,8 +145,8 @@ func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 					FlashError(tx.Error)
 				} else {
 					S.AddFlash(r, FlashInfo(gettext("Register success")))
-					S.makeLogin(r, &u)
-					http.Redirect(w, r, must(S.GetBlueprint().GetUrl("admin.index")), http.StatusFound)
+					S.makeLogin(r, u.ID)
+					http.Redirect(w, r, must(S.Blueprint.GetUrl("admin.index")), http.StatusFound)
 				}
 			}
 		}
@@ -117,7 +163,7 @@ func (S *Security) registerHandler(w http.ResponseWriter, r *http.Request) {
 			"name":      S.Menu.Name,
 			"extra_css": []string{},
 			"extra_js":  []string{}, // "a.js", "b.js"}
-			"admin":     S.admin.dict(),
+			"admin":     S.admin.dict(r),
 
 			"admin_fluid_layout": true,
 
@@ -139,13 +185,16 @@ func (S *Security) Check(w http.ResponseWriter, r *http.Request) {
 
 func (S *Security) getUser(uid int) *User {
 	var u User
-	if S.db.Find(&u, uid).Error == nil {
+	if S.db.Preload("Roles").Find(&u, uid).Error == nil {
 		return &u
 	}
 	return nil
 }
-func (S *Security) makeLogin(r *http.Request, u *User) {
-	S.admin.Session(r).Values["uid"] = u.ID
+func (S *Security) makeLogin(r *http.Request, uid int) {
+	S.admin.Session(r).Values["uid"] = uid
+}
+func (S *Security) logout(r *http.Request) {
+	delete(S.admin.Session(r).Values, "uid")
 }
 
 // return md5(password + "gadm")
@@ -199,6 +248,15 @@ func CurrentUser(r *http.Request) *User {
 	a := r.Context().Value(currentUserKey)
 	if a != nil {
 		return a.(*User)
+	}
+	return nil
+}
+
+func CurrentRoles(r *http.Request) []string {
+	if u := CurrentUser(r); u != nil {
+		return lo.Map(u.Roles, func(r Role, _ int) string {
+			return r.Name
+		})
 	}
 	return nil
 }

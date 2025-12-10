@@ -90,6 +90,8 @@
 
     {{ if .admin.debug }}
     <hr>
+    is visible: {{ .admin.menu.IsVisible }}
+    is active: {{ .admin.menu.IsActive }}
     <div class="container{{ if .admin_fluid_layout }}-fluid{{ end }}">
         {{range $k, $v := .}}<li>{{$k}}: {{$v|typeOf}} {{if eq (typeOf $v) "string"}}"{{$v}}"{{end}}
         {{end}}
