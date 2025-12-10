@@ -113,4 +113,9 @@ func TestMenuAccess(t *testing.T) {
 	d = root.dict("/admin/", []string{"user"})
 	is.True(d["IsActive"].(bool)) // weird
 	is.True(d["IsVisible"].(bool))
+
+	root.Children = root.Children[0:2]
+	is.True(root.hasAccess([]string{"user"}))
+	is.True(root.hasAccess([]string{"editor"}))
+	is.False(root.hasAccess(nil))
 }

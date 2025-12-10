@@ -338,9 +338,10 @@ func (A *Admin) dict(r *http.Request, others ...map[string]any) map[string]any {
 		"url":       A.Blueprint.Path, // "/admin"
 		"blueprint": A.Blueprint,
 		// 'swatch' from flask-admin
-		"swatch": A.theme,
-		"menu":   A.Menu.dict(r.URL.Path, CurrentRoles(r)),
-		"config": config,
+		"swatch":        A.theme,
+		"menu":          A.Menu.dict(r.URL.Path, CurrentRoles(r)),
+		"security_menu": A.security.Menu.dict(r.URL.Path, CurrentRoles(r)),
+		"config":        config,
 	}, firstOr(others))
 }
 

@@ -228,7 +228,11 @@ func (M *Menu) dict(current_path string, user_roles []string) map[string]any {
 }
 
 func (M *Menu) hasAccess(user_roles []string) bool {
-	if len(M.Roles) == 0 {
+	if len(user_roles) == 0 && len(M.Roles) > 0 {
+		return false
+	}
+
+	if len(M.Roles) == 0 && len(M.Children) == 0 {
 		return true
 	}
 

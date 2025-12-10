@@ -7,7 +7,7 @@
     {{- range .Children -}}
         {{- if .Children }}
             {{ if ne .Name "Account" }}
-            {{ if .IsAccessible }}
+            {{ if .IsVisible }}
             <li class="{{ if .IsActive }}active {{ end }}dropdown{{ if .Class }} {{ .Class }}{{ end }}">
                 <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="javascript:void(0)">{{ .Name }}<i class="glyphicon glyphicon-chevron-down small"></i></a>
                 <ul class="dropdown-menu">
@@ -19,9 +19,11 @@
             {{ end }}
             {{ end }}
         {{- else }}
+            {{ if .IsVisible }}
             <li{{ if .Class }} class="{{ .Class }}"{{ end }}>
                 <a class="nav-link" href="{{ .Path }}">{{ .Name }}</a>
             </li>
+            {{ end }}
         {{ end -}}
     {{- end -}}
 {{ end }}
@@ -29,6 +31,7 @@
 
 {{ define "menu_item" }}
     {{/* dropleft, dropright */}}
+    {{ if .IsVisible }}
     {{- if .Children }}
             <li class="dropdown dropdown-submenu dropleft">
                 <a class="dropdown-toggle dropdown-item" data-toggle="dropdown" href="javascript:void(0)">
@@ -46,6 +49,7 @@
                 <a class="dropdown-item" href="{{ .Path }}">{{ .Name }}</a>
             </li>
     {{- end }}
+    {{ end }}
 {{ end }}
 
 

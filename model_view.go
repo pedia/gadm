@@ -104,6 +104,7 @@ func NewModelView(m any, db *gorm.DB, eps ...string) *ModelView {
 		//
 		column_descriptions: map[string]string{},
 	}
+	mv.SetRoles("user")
 
 	mv.Blueprint = &Blueprint{
 		Name:     model.label(),
@@ -571,7 +572,7 @@ func (V *ModelView) debugHandler(w http.ResponseWriter, r *http.Request) {
 
 	V.Render(w, r, "debug.tmpl", nil, map[string]any{
 		"query":     V.queryFrom(r),
-		"menu":      V.Menu,
+		"menu":      V.Menu.dict(r.URL.Path, CurrentRoles(r)),
 		"blueprint": V.Blueprint,
 	})
 }
