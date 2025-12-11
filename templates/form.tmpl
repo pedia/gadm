@@ -44,7 +44,7 @@
 
 
 {{define "field_select2_ajax"}}
-      <input class="form-control" data-allow-blank="1" data-minimum-input-length="1" data-placeholder="Please select model" 
+    <input class="form-control" data-allow-blank="1" data-minimum-input-length="1" data-placeholder="Please select model" 
         data-role="select2-ajax" data-separator=","
         data-url="{{get_url (printf "%s%s" .Schema.Table ".ajax_lookup") "name" .Endpoint }}" id="{{.Endpoint}}" name="{{.Endpoint}}" type="hidden">
 {{end}}
