@@ -148,6 +148,7 @@ func (S *Security) sendConfirmationHandler(w http.ResponseWriter, r *http.Reques
 func (S *Security) getUser(uid int) *User {
 	var u User
 	if S.db.Preload("Roles").Find(&u, uid).Error == nil {
+		u.Password = "" // for safe
 		return &u
 	}
 	return nil

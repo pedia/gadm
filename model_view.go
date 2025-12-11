@@ -565,6 +565,10 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 	result := V.list(q)
 	result.Fields = V.fsList
 
+	if result.Error != nil {
+		V.AddFlash(r, FlashError(result.Error))
+	}
+
 	V.Render(w, r, "model_list.tmpl", template.FuncMap{
 		"is_sortable": func(name string) bool {
 			return slices.Contains(V.column_sortable_list, name)
@@ -855,7 +859,8 @@ func (V *ModelView) exportHandler(w http.ResponseWriter, r *http.Request) {
 	q := V.queryFrom(r)
 	result := V.list(q)
 	if result.Error != nil {
-		panic(result.Error)
+		V.AddFlash(r, FlashError(result.Error))
+		return
 	}
 
 	fn := fmt.Sprintf("attachment;filename=%s-%s.csv", V.name(),
