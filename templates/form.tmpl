@@ -3,7 +3,7 @@
 {{- end}}
 
 {{define "field_checkbox"}}
-    <input class="" type="checkbox" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{.Display}}">
+    <input class="" type="checkbox" id="{{.DBName}}" name="{{.DBName}}" {{if eq .Display "true"}}checked {{end}}{{if .NotNull}}required {{end}}value="{{.Display}}">
 {{end}}
 
 
@@ -23,7 +23,7 @@
 
 
 {{define "field_time"}}
-    <input class="form-control" type="text" data-date-format="YYYY-MM-DD" data-role="datepicker" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{if .Value}}{{.Display}}{{else}}{{.DefaultValue}}{{end}}">
+    <input class="form-control" type="text" data-date-format="YYYY-MM-DD" data-role="datepicker" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{if .Value}}{{.Display}}{{end}}">
 {{end}}
 
 

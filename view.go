@@ -38,7 +38,7 @@ func NewView(menu Menu) *BaseView {
 		gt: NewGroupTempl("templates/base.tmpl",
 			"templates/layout.tmpl",
 			"templates/lib.tmpl", // move to ModelView
-			"templates/master.tmpl"),
+			"templates/base.tmpl"),
 	}
 }
 

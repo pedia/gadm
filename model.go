@@ -199,6 +199,10 @@ func (f *Field) Display() string {
 	if f.DataType == schema.Bool {
 		switch v := f.Value.(type) {
 		case nil:
+			// is right?
+			if f.HasDefaultValue {
+				return f.DefaultValue
+			}
 			return "false"
 		case bool:
 			return f.displayBool(v)

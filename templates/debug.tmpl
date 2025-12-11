@@ -4,6 +4,13 @@
 <head></head>
 
 <body>
+
+<input type="checkbox" name="subscribe" value="yes" checked> Subscribe to newsletter
+<br>
+
+<input class="" type="checkbox" id="enabled" name="enabled" value="true">
+<br>
+
 <textarea rows="20" cols="50">
 {{if eq (.query.Get "a") "2"}}
 flashed: {{get_flashed_messages}}
