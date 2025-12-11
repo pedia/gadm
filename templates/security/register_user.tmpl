@@ -1,0 +1,37 @@
+{{ template "base.tmpl" .}}
+
+
+{{ define "head" }}
+    {{ template "form_css" . }}
+{{ end }}
+
+
+{{ define "body" }}
+  <h1>{{ gettext "Register" }}</h1>
+  <form action="{{ get_url "security.register" }}" method="POST" role="form" class="admin-form" enctype="multipart/form-data">
+    <fieldset>
+      <input name="csrf_token" type="hidden" value="{{ csrf_token }}">
+
+      <label for="username" class="control-label">{{ gettext "User Name" }}<strong style="color: red">&nbsp;*</strong></label>
+      <input class="form-control" type="text" id="username" name="username" maxlength="255" required>
+      
+      <label for="email" class="control-label">Email<strong style="color: red">&nbsp;*</strong></label>
+      <input class="form-control" type="text" id="email" name="email" maxlength="255" required>
+      
+      <label for="password" class="control-label">{{ gettext "Password" }}<strong style="color: red">&nbsp;*</strong></label>
+      <input class="form-control" type="password" id="password" name="password" maxlength="255" required>
+      
+      <label for="confirm_password" class="control-label">{{ gettext "Confirm Password" }}<strong style="color: red">&nbsp;*</strong></label>
+      <input class="form-control" type="password" id="confirm_password" name="confirm_password" maxlength="255" required>
+    
+    <hr>
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10 submit-row">
+          <input type="submit" class="btn btn-primary" value="{{ "Register" }}" />
+          <a href="/admin/" class="btn btn-danger" role="button">Cancel</a>
+        </div>
+    </div>
+    </fieldset>
+  </form>
+
+{{ end }}

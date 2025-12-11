@@ -70,7 +70,6 @@ var Namer = schema.NamingStrategy{SingularTable: true}
 var schemaStore = sync.Map{}
 
 func NewModel(m any) *Model {
-	// TODO: option SingularTable
 	s := must(schema.Parse(m, &schemaStore, Namer))
 	fs := lo.Map(s.Fields, func(field *schema.Field, _ int) *Field {
 		return &Field{Field: field, Label: strings.Join(camelcase.Split(field.Name), " ")}
@@ -110,9 +109,6 @@ func (m *Model) find(name string) *Field {
 // Return all field can be sorted
 // exclude relationship fields
 func (m *Model) sortableColumns() []string { return m.schema.DBNames }
-
-// TODO: remove
-func (m *Model) get_pk_value(row *Row) string { return row.GetPkValue() }
 
 // single primarykey, rowid: id
 // multiple primarykey, rowid like: pk1,pk2
@@ -163,7 +159,7 @@ func (f *Field) Slice() []*wrap {
 
 	ws := make([]*wrap, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
-		ws[i] = Wrap(rv.Index(0).Interface())
+		ws[i] = Wrap(rv.Index(i).Interface())
 	}
 	return ws
 }
@@ -171,7 +167,11 @@ func (f *Field) IsStruct() bool {
 	return f.DBName == "" && f.Schema != nil && !f.IsSlice()
 }
 
-// TODO: remove
+func (f *Field) IsNil() bool {
+	return isNil(f.Value)
+}
+
+// Struct's PkValue
 func (f *Field) GetPkValue() string {
 	vs := []string{}
 	for _, pkf := range f.Schema.PrimaryFields {
@@ -199,6 +199,10 @@ func (f *Field) Display() string {
 	if f.DataType == schema.Bool {
 		switch v := f.Value.(type) {
 		case nil:
+			// is right?
+			if f.HasDefaultValue {
+				return f.DefaultValue
+			}
 			return "false"
 		case bool:
 			return f.displayBool(v)
@@ -273,6 +277,7 @@ func Wrap(v any) *wrap {
 	return &wrap{m, NewRow(m.Fields, v)}
 }
 
+// TODO: add wrap.Display for Stringer
 func (w *wrap) Endpoint() string {
 	return w.Model.endpoint()
 }

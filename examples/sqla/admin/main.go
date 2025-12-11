@@ -29,29 +29,34 @@ func main() {
 		SetColumnFilters("name", "valid", "birthday", "age")
 	a.AddView(vat)
 
-	a.AddView(gadm.NewModelView(sqla.Company{}, db, "BelongsTo"))
-	ve := gadm.NewModelView(sqla.Employee{}, db, "BelongsTo").
+	a.AddView(gadm.NewModelView(sqla.Company{}, db), "BelongsTo")
+	ve := gadm.NewModelView(sqla.Employee{}, db).
 		Joins("Company").
 		AddLookupRefer(sqla.Company{}, "name").
 		SetColumnFilters("name")
-	a.AddView(ve)
+	a.AddView(ve, "BelongsTo")
 
-	a.AddView(gadm.NewModelView(sqla.CreditCard{}, db, "HasOne"))
-	vu := gadm.NewModelView(sqla.User{}, db, "HasOne").
+	a.AddView(gadm.NewModelView(sqla.CreditCard{}, db), "HasOne")
+	vu := gadm.NewModelView(sqla.Holder{}, db).
 		Joins("CreditCard")
-	a.AddView(vu)
+	a.AddView(vu, "HasOne")
 
-	a.AddView(gadm.NewModelView(sqla.Address{}, db, "HasMany"))
-	va := gadm.NewModelView(sqla.Account{}, db, "HasMany").
+	a.AddView(gadm.NewModelView(sqla.Address{}, db), "HasMany")
+	va := gadm.NewModelView(sqla.Account{}, db).
 		Preloads("Addresses")
-	a.AddView(va)
+	a.AddView(va, "HasMany")
 
-	a.AddView(gadm.NewModelView(sqla.Toy{}, db, "Polymorphism"))
-	vt := gadm.NewModelView(sqla.Dog{}, db, "Polymorphism").
-		Preloads("Toys")
-	a.AddView(vt)
+	a.AddView(gadm.NewModelView(sqla.Language{}, db), "Many2Many")
+	vs := gadm.NewModelView(sqla.Student{}, db).
+		Preloads("Languages")
+	a.AddView(vs, "Many2Many")
 
-	a.BaseView.Menu.AddMenu(&gadm.Menu{Category: "Other", Name: "Other", Path: "/other"})
+	a.AddView(gadm.NewModelView(sqla.Toy{}, db), "Polymorphism")
+	vt := gadm.NewModelView(sqla.Dog{}, db).
+		Preloads("Toys").SetRoles("nobody")
+	a.AddView(vt, "Polymorphism")
+
+	a.BaseView.Menu.AddMenu(&gadm.Menu{Name: "Other", Path: "/other"}, "Other")
 	a.BaseView.Menu.AddMenu(&gadm.Menu{Name: "Tree", Path: "/tree"}, "Other")
 	a.BaseView.Menu.AddMenu(&gadm.Menu{Name: "Links", Path: "/links", Children: []*gadm.Menu{
 		{Name: "Back Home", Path: "/"},
@@ -60,9 +65,11 @@ func main() {
 
 	// TODO: replace index handler /admin/
 
-	// for _, p := range sqla.Samples {
-	// 	db.Create(p)
-	// }
+	for _, p := range sqla.Samples {
+		if db.Create(p).Error != nil {
+			break
+		}
+	}
 
 	a.Run()
 }

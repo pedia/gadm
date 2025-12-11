@@ -1,94 +1,3 @@
-{{/* ---------------------- Pager -------------------------- 
-  input: page, pages, pager_url
-  << < 1 2 > >>
-  <li class="page-item diabled active">
-    <a class="page-link" href="/admin/user/?page=1">2</a>
-  </li>
-*/}}
-{{ define "pager" -}}
-  {{ if gt .pages 1 }}
-  <ul class="pagination">
-    {{ $min := sub .page 3 }}
-    {{ $max := add .page 4 }}
-    {{ if lt $min 0 }}
-      {{ $max = sub $max $min }}
-    {{ end }}
-    {{ if ge $max .pages }}
-      {{ $min = add (sub $min $max) .pages }}
-    {{ end }}
-
-    {{ if lt $min 0 }}
-      {{ $min = 0 }}
-    {{ end }}
-    {{ if ge $max .pages }}
-      {{ $max = .pages }}
-    {{ end }}
-
-    {{ if gt $min 0 }}
-      <li class="page-item">
-          <a class="page-link" href="{{ pager_url 0 }}">&laquo;</a>
-      </li>
-    {{ else }}
-      <li class="page-item disabled">
-        <a class="page-link" href="javascript:void(0)">&laquo;</a>
-      </li>
-    {{ end }}
-    {{ if gt .page 0 }}
-      <li class="page-item">
-        <a class="page-link" href="{{ pager_url (sub .page 1) }}">&lt;</a>
-      </li>
-    {{ else }}
-      <li class="page-item disabled">
-        <a class="page-link" href="javascript:void(0)">&lt;</a>
-      </li>
-    {{ end }}
-
-    {{ $ps := seq $min $max }}
-    {{ $page := .page }}
-    {{ range $p := $ps }}
-      {{ if eq $p $page }}
-      <li class="page-item active">
-        <a class="page-link" href="javascript:void(0)">{{ add $p 1 }}</a>
-      </li>
-      {{ else }}
-      <li class="page-item">
-        <a class="page-link" href="{{ pager_url $p }}">{{ add $p 1 }}</a>
-      </li>
-      {{ end }}
-    {{ end }}
-
-    {{ if lt ( add $page 1 ) .pages }}
-      <li class="page-item">
-        <a class="page-link" href="{{ pager_url ( add .page  1) }}">&gt;</a>
-      </li>
-    {{ else }}
-      <li class="page-item disabled">
-        <a class="page-link" href="javascript:void(0)">&gt;</a>
-      </li>
-    {{ end }}
-
-    {{ if lt $max .pages }}
-      <li class="page-item">
-        <a class="page-link" href="{{ pager_url ( sub .pages 1) }}">&raquo;</a>
-      </li>
-    {{ else }}
-      <li class="page-item disabled">
-        <a class="page-link" href="javascript:void(0)">&raquo;</a>
-      </li>
-    {{ end }}
-  </ul>
-  {{- end }}
-{{ end }}
-
-{{/* (page, have_next, generator) */}}
-{{ define "simple_pager" -}}
-<ul class="pagination">
-  <li class="page-item">
-      <a href="{{ .page }}">&lt;</a>
-  </li>
-</ul>
-{{- end }}
-
 
 {{/* (modal_window_id='fa_modal_window', modal_label_id='fa_modal_label') */}}
 {{ define "add_modal_window" }}
@@ -241,6 +150,7 @@
     {{ end }}
 {{ end }}
 
+
 {{ define "render_form" }}
   <form action="{{ .form.action }}" method="POST" role="form" class="admin-form" enctype="multipart/form-data">
     <fieldset>
@@ -256,8 +166,6 @@
       | args}}
   </form>
 {{ end }}
-
-
 
 
 {{ define "form_css" }}
@@ -313,17 +221,3 @@
   {{- end -}}
 {{ end }}
 
-
-{{ define "admin_nav" }}
-  <ul class="nav nav-tabs">
-      <li class="nav-item">
-          <a href="{{get_url ".console"}}" class="nav-link {{if eq .path (get_url ".console") }}active{{end}}">SQL Console</a>
-      </li>
-      <li class="nav-item">
-          <a href="{{get_url ".trace"}}" title="Trace" class="nav-link {{if eq .path (get_url ".trace") }}active{{end}}">Trace</a>
-      </li>
-      <li class="nav-item">
-          <a href="{{get_url ".generate"}}" title="Generate from Database" class="nav-link {{if eq .path (get_url ".generate") }}active{{end}}">Generate</a>
-      </li>
-  </ul>
-{{ end }}

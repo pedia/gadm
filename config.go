@@ -1,6 +1,8 @@
 package gadm
 
 import (
+	"gadm/isdebug"
+
 	"github.com/spf13/cast"
 )
 
@@ -27,6 +29,10 @@ func (c Config) Int(name string, default_value ...int) int {
 	return firstOr(default_value)
 }
 
+func (c Config) Get(name string) any {
+	return c[name]
+}
+
 func (c Config) Put(name string, v any) {
 	c[name] = v
 }
@@ -48,4 +54,7 @@ func (c Config) Put(name string, v any) {
 
 // config.Bool("debug.verbose", true)
 // net.Dial(config.String("xx.address", "10.0.0.1:3389"))
-var config = Config(map[string]any{})
+var config = Config(map[string]any{
+	"debug": isdebug.On,
+	"theme": "cyborg",
+})

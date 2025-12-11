@@ -2,6 +2,7 @@ package sqla
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -48,14 +49,14 @@ func (c *Company) String() string { return c.Name }
 
 // has one https://gorm.io/docs/has_one.html
 type CreditCard struct {
-	Id     uint   `gorm:"primaryKey;autoincrement"`
-	Number string `gorm:"size:32"`
-	UserID uint
+	Id       uint   `gorm:"primaryKey;autoincrement"`
+	Number   string `gorm:"size:32"`
+	HolderID uint
 }
-type User struct {
+type Holder struct {
 	Id         uint `gorm:"primaryKey;autoincrement"`
 	Name       string
-	CreditCard CreditCard `gorm:"foreignKey:UserID"`
+	CreditCard *CreditCard `gorm:"foreignKey:HolderID"`
 }
 
 // has many https://gorm.io/docs/has_many.html
@@ -64,6 +65,9 @@ type Address struct {
 	Number    string
 	AccountID uint
 }
+
+func (a *Address) String() string { return fmt.Sprintf("Addr:%d:%s", a.Id, a.Number) }
+
 type Account struct {
 	Id        uint `gorm:"primaryKey;autoincrement"`
 	Name      string
@@ -95,29 +99,42 @@ type Dog struct {
 }
 
 var Models = []any{&AllTyped{},
-	Company{}, &Employee{},
-	User{}, &CreditCard{},
-	Account{}, &Address{},
-	Language{}, &Student{},
-	Toy{}, &Dog{}}
+	&Company{}, &Employee{},
+	&Holder{}, &CreditCard{},
+	&Account{},
+	&Address{},
+	&Language{}, &Student{},
+	&Toy{}, &Dog{}}
 
 func ptr[T any](t T) *T {
 	return &t
 }
 
 var Samples = []any{
-	AllTyped{ID: 3, Name: "foo", Email: ptr("foo@a.com"), Age: 42, IsNormal: true,
-		Valid: ptr(true), NotNone: ptr(false), Birthday: ptr(time.Now()),
-		Badge: sql.NullString{String: "9527", Valid: true}},
-	AllTyped{ID: 4, Name: "bar", Email: ptr("bar@a.com"), Age: 21, IsNormal: false,
-		Valid: ptr(true), NotNone: ptr(false), Birthday: ptr(time.Now()),
-		Badge: sql.NullString{String: "3699", Valid: true}},
-	Company{Name: "talk ltd", Id: 31},
-	Company{Name: "chat ltd", Id: 32},
-	Employee{Name: "Alice", CompanyId: null.NewInt(31, true)},
-	Employee{Name: "Bob", CompanyId: null.NewInt(31, true)},
-	User{Name: "Alice", Id: 1}, &CreditCard{Number: "2392423948234", UserID: 1},
-	Account{Name: "Alice", Id: 1}, &Address{AccountID: 1, Number: "29-1"},
-	Language{Name: "french"}, &Student{Name: "alice"},
-	Dog{Name: "dog1", Toys: []Toy{{Name: "toy1"}, {Name: "toy2"}}},
+	&AllTyped{ID: 3, Name: "foo",
+		Email: ptr("foo@a.com"),
+		Age:   42, IsNormal: true,
+		Valid:    ptr(true),
+		NotNone:  ptr(false),
+		Birthday: ptr(time.Now()),
+		Badge:    sql.NullString{String: "9527", Valid: true}},
+	&AllTyped{ID: 4, Name: "bar",
+		Email: ptr("bar@a.com"),
+		Age:   21, IsNormal: false,
+		Valid:    ptr(true),
+		NotNone:  ptr(false),
+		Birthday: ptr(time.Now()),
+		Badge:    sql.NullString{String: "3699", Valid: true}},
+	&Company{Id: 31, Name: "talk ltd"},
+	&Company{Id: 32, Name: "chat ltd"},
+	&Employee{Id: 2, Name: "Alice", CompanyId: null.NewInt(31, true)},
+	&Employee{Id: 3, Name: "Bob", CompanyId: null.NewInt(31, true)},
+	&Holder{Id: 1, Name: "Alice"},
+	&CreditCard{Id: 1, Number: "2392423948234", HolderID: 1},
+	&Account{Id: 1, Name: "Alice"},
+	&Address{Id: 2, AccountID: 1, Number: "29-1"},
+	&Address{Id: 3, AccountID: 1, Number: "401"},
+	&Address{Id: 4, AccountID: 1, Number: "Heaven 101"},
+	&Student{Id: 1, Name: "alice", Languages: []Language{{Id: 1, Name: "french"}, {Id: 2, Name: "japanese"}}},
+	&Dog{Id: 1, Name: "dog1", Toys: []Toy{{Id: 1, Name: "toy1"}, {Id: 2, Name: "toy2"}}},
 }

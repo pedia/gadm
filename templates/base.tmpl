@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{{ block "title" .}}{{ if .category }}{{ .category }} - {{ end }}{{ .name }} - {{ .admin.name }}{{ end }}</title>
+    <title>{{ block "title" .}}{{ .name }} - {{ .admin.name }}{{ end }}</title>
     {{- block "head_meta" .}}
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
     {{ end -}}
     {{- block "head_css" .}}
     <link href="{{ admin_static_url (printf "%s%s%s" "bootstrap/bootstrap4/swatch/" .admin.swatch "/bootstrap.min.css") "4.2.1" }}"
@@ -54,9 +52,7 @@
             </ul>
             {{ end -}}
 
-            {{ block "access_control" .admin -}}
-                {{ template "security" .security.Menu }}
-            {{ end -}}
+            {{ template "security" .admin.security_menu }}
             </div>
         </nav>
 
@@ -90,9 +86,10 @@
 
     {{ if .admin.debug }}
     <hr>
+    <li>current user: {{ .current_user }}
+    <li>is visible: {{ .admin.menu.IsVisible }}
+    <li>is active: {{ .admin.menu.IsActive }}
     <div class="container{{ if .admin_fluid_layout }}-fluid{{ end }}">
-        
-
         {{range $k, $v := .}}<li>{{$k}}: {{$v|typeOf}} {{if eq (typeOf $v) "string"}}"{{$v}}"{{end}}
         {{end}}
     </div>

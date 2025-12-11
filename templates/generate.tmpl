@@ -1,4 +1,4 @@
-{{ template "master.gotmpl" . }}
+{{ template "base.tmpl" . }}
 
 {{ define "head" }}
 <script type="text/javascript">
@@ -58,7 +58,7 @@ Database URL like: sqlite:path/to/sqlite.db postgresql://user:password@localhost
 
 <div class="form-group">
 <label for="package" class="control-label">Package<strong style="color: red">&nbsp;&#42;</strong></label>
-<input class="form-control" type="text" name="package" value="main">
+<input class="form-control" type="text" name="package" value="{{if .gen}}{{.gen.Package}}{{else}}main{{end}}">
 
 <small class="form-text text-muted">package main able to build as a plugin, and be loaded into current process</small>
 </div>

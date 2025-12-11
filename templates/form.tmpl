@@ -3,7 +3,7 @@
 {{- end}}
 
 {{define "field_checkbox"}}
-    <input class="" type="checkbox" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{.Display}}">
+    <input class="" type="checkbox" id="{{.DBName}}" name="{{.DBName}}" {{if eq .Display "true"}}checked {{end}}{{if .NotNull}}required {{end}}value="{{.Display}}">
 {{end}}
 
 
@@ -23,7 +23,7 @@
 
 
 {{define "field_time"}}
-    <input class="form-control" type="text" data-date-format="YYYY-MM-DD" data-role="datepicker" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{if .Value}}{{.Display}}{{else}}{{.DefaultValue}}{{end}}">
+    <input class="form-control" type="text" data-date-format="YYYY-MM-DD" data-role="datepicker" id="{{.DBName}}" name="{{.DBName}}" {{if .NotNull}}required {{end}}value="{{if .Value}}{{.Display}}{{end}}">
 {{end}}
 
 
@@ -44,12 +44,13 @@
 
 
 {{define "field_select2_ajax"}}
-      <input class="form-control" data-allow-blank="1" data-minimum-input-length="1" data-placeholder="Please select model" 
+    <input class="form-control" data-allow-blank="1" data-minimum-input-length="1" data-placeholder="Please select model" 
         data-role="select2-ajax" data-separator=","
         data-url="{{get_url (printf "%s%s" .Schema.Table ".ajax_lookup") "name" .Endpoint }}" id="{{.Endpoint}}" name="{{.Endpoint}}" type="hidden">
 {{end}}
 
 
+{{/* TODO: rename to render field */}}
 {{define "field_switch"}}
 {{if .Hidden}}
   {{ template "field_hidden" . }}

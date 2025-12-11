@@ -1,17 +1,21 @@
 package gadm
 
 import (
+	"bytes"
 	"fmt"
 	"gadm/examples/sqla"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 
-	"github.com/glebarez/sqlite"
+	"github.com/gorilla/csrf"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/guregu/null.v4"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
@@ -20,16 +24,16 @@ import (
 func views(db *gorm.DB) []*ModelView {
 	return []*ModelView{
 		NewModelView(sqla.AllTyped{}, db),
-		NewModelView(sqla.Company{}, db, "Association"),
-		NewModelView(sqla.Employee{}, db, "Association"),
-		NewModelView(sqla.CreditCard{}, db, "Association"),
-		NewModelView(sqla.User{}, db, "Association"),
-		NewModelView(sqla.Address{}, db, "Association"),
-		NewModelView(sqla.Account{}, db, "Association"),
-		NewModelView(sqla.Language{}, db, "Association"),
-		NewModelView(sqla.Student{}, db, "Association"),
-		NewModelView(sqla.Toy{}, db, "Association"),
-		NewModelView(sqla.Dog{}, db, "Association"),
+		NewModelView(sqla.Company{}, db),
+		NewModelView(sqla.Employee{}, db),
+		NewModelView(sqla.CreditCard{}, db),
+		NewModelView(sqla.Holder{}, db),
+		NewModelView(sqla.Address{}, db),
+		NewModelView(sqla.Account{}, db),
+		NewModelView(sqla.Language{}, db),
+		NewModelView(sqla.Student{}, db),
+		NewModelView(sqla.Toy{}, db),
+		NewModelView(sqla.Dog{}, db),
 	}
 }
 
@@ -79,19 +83,17 @@ func TestModel(t *testing.T) {
 		is.Equal("foo", r1.Fields[1].Value)
 		// is.True(r1["is_normal"].(bool))
 
-		is.Equal("3", m.get_pk_value(r1))
+		is.Equal("3", r1.GetPkValue())
 		is.Equal(map[string]string{"id": "3"}, m.where("3"))
 	}
 
-	// protype
+	// prototype
 	o := any(sqla.AllTyped{Name: ""})
 	rv := reflect.ValueOf(o)
 	for _, f := range m.schema.Fields {
 		fv := rv.FieldByName(f.Name)
 		is.True(fv.IsValid())
-		// fmt.Printf("%s %v\n", f.Name, fv.Interface())
 	}
-	// is.NotNil(v1)
 
 	// dv1 := r1.GetDisplayValue(m.Fields[8])
 	// is.Equal("9527", dv1)
@@ -100,12 +102,12 @@ func TestModel(t *testing.T) {
 		&gorm.Config{NamingStrategy: Namer})
 	db.AutoMigrate(sqla.AllTyped{})
 
-	a2 := []sqla.AllTyped{sqla.Samples[0].(sqla.AllTyped), sqla.Samples[1].(sqla.AllTyped)}
+	a2 := []*sqla.AllTyped{sqla.Samples[0].(*sqla.AllTyped), sqla.Samples[1].(*sqla.AllTyped)}
 	tx0 := db.Model(&sqla.AllTyped{}).Create(&a2)
 	is.Nil(tx0.Error)
 
 	m1 := NewRow(m.Fields, a2[0])
-	rowid := m.get_pk_value(m1)
+	rowid := m1.GetPkValue()
 
 	// update
 	m1.Map["email"] = "reachable@foo.com"
@@ -216,11 +218,11 @@ func (ts *ModelTestSuite) TestModel() {
 func (ts *ModelTestSuite) TestModelView() {
 	v := ts.typedView
 
-	ts.is.NotEmpty(v.GetBlueprint().Children)
+	ts.is.NotEmpty(v.Blueprint.Children)
 
 	ts.is.Equal("/admin/alltyped/", must(v.Blueprint.GetUrl(".index_view")))
-	ts.is.Equal("/admin/alltyped/action", must(v.Blueprint.GetUrl(".action_view")))
-	ts.is.Equal("/admin/alltyped/action?a=b", must(v.Blueprint.GetUrl(".action_view", "a", "b")))
+	ts.is.Equal("/admin/alltyped/action", must(v.Blueprint.GetUrl(".action")))
+	ts.is.Equal("/admin/alltyped/action?a=b", must(v.Blueprint.GetUrl(".action", "a", "b")))
 
 	// query
 	r1 := httptest.NewRequest("", "/admin/tag/?sort=0&desc=1&page_size=23&page=2", nil)
@@ -247,17 +249,47 @@ func (ts *ModelTestSuite) TestModelView() {
 	ts.is.Equal("/admin/tag/?desc=1&sort=1", q3.Get("url"))
 }
 
-// func (S *ModelTestSuite) TestSession() {
-// 	is := assert.New(S.T())
-// 	S.admin.Register(&Blueprint{Endpoint: "bar", Path: "/bar",
-// 		Handler: func(w http.ResponseWriter, r *http.Request) {
-// 			CurrentSession(r).Set("bar", "hello")
-// 		}})
-// 	r := httptest.NewRequest("GET", "/admin/bar", nil)
-// 	w := httptest.NewRecorder()
-// 	S.admin.ServeHTTP(w, r)
-// 	is.Equal(200, w.Code)
-// }
+func (S *ModelTestSuite) TestSession() {
+	r := httptest.NewRequest("GET", "/admin/bar", nil)
+	w := httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(404, w.Code)
+
+	r = httptest.NewRequest("GET", "/admin/holder", nil)
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(301, w.Code)
+
+	r = httptest.NewRequest("GET", "/admin/holder/", nil)
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(200, w.Code)
+
+	r = httptest.NewRequest("POST", "/admin/holder/new", bytes.NewBufferString("name=simpson"))
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(403, w.Code)
+
+	mux := http.NewServeMux()
+	var token string
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token = csrf.Token(r)
+	}))
+	r = httptest.NewRequest("GET", "/", nil)
+	w = httptest.NewRecorder()
+	S.admin.csrf(mux).ServeHTTP(w, r)
+	ck, err := http.ParseSetCookie(w.Header().Get("set-cookie"))
+	S.is.Nil(err)
+	S.is.Equal("csrf", ck.Name)
+
+	bs := "name=simpson&csrf_token=" + url.QueryEscape(token)
+	r = httptest.NewRequest("POST", "/admin/holder/new", bytes.NewBufferString(bs))
+	r.AddCookie(ck)
+	r.Header.Add("content-type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	S.admin.ServeHTTP(w, r)
+	S.is.Equal(302, w.Code)
+}
 
 func (ts *ModelTestSuite) TestUrlStatusCode() {
 	ts.is.Equal("/admin/alltyped/", must(ts.admin.UrlFor("", "alltyped.index")))

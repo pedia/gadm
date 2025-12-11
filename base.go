@@ -101,7 +101,7 @@ func queryToPairs(uv url.Values) []any {
 	return arr
 }
 
-func mapContains[K comparable, V any](m map[K]V, k K) bool {
+func inmap[K comparable, V any](m map[K]V, k K) bool {
 	_, ok := m[k]
 	return ok
 }
@@ -193,6 +193,18 @@ func (cw *cachedWriter) Flush() {
 	cw.ResponseWriter.Write(cw.cache.Bytes())
 }
 
+func withCache() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cw := NewCachedWriter(w)
+			defer cw.Flush()
+			next.ServeHTTP(cw, r)
+		})
+	}
+}
+
+// In Release, cache parsed template
+// In Debug, parse every time
 type groupTempl struct {
 	basefn []string
 	cache  sync.Map
@@ -236,7 +248,7 @@ func (gt *groupTempl) Render(w http.ResponseWriter, fn string, funcs template.Fu
 	return tpl.ExecuteTemplate(w, bn, data)
 }
 
-// call ExcuteTemplate, [name] should be valid in gt.basefn
+// call ExcuteTemplate, [name] should be valid in template set
 func (gt *groupTempl) Execute(name string, data map[string]any) template.HTML {
 	// assume the _base alread done
 	bt := gt.base(nil)

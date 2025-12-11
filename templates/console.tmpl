@@ -1,4 +1,4 @@
-{{ template "master.gotmpl" . }}
+{{ template "base.tmpl" . }}
 
 {{ define "body" }}
 
@@ -58,7 +58,7 @@
 
     <hr>
     <form action method="post" role="form" class="admin-form">
-<fieldset>
+    <fieldset>
     {{.csrf_field}}
 
     <div class="form-group">

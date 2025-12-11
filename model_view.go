@@ -38,7 +38,6 @@ type ModelView struct {
 	column_list          []string
 	column_exclude_list  []string
 	column_editable_list []string
-	// TODO: id, name, dept.id
 	column_sortable_list []string
 	column_descriptions  map[string]string
 
@@ -86,13 +85,12 @@ type queryArg struct {
 }
 
 // TODO: ensure m not ptr
-func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
+// ep: endpoint for this view
+func NewModelView(m any, db *gorm.DB, eps ...string) *ModelView {
 	model := NewModel(m)
 
-	cate := firstOr(category, "")
-
 	mv := ModelView{
-		BaseView:               NewView(Menu{Name: model.label(), Category: cate}),
+		BaseView:               NewView(Menu{Name: model.label()}),
 		db:                     db,
 		Model:                  model,
 		can_create:             true,
@@ -106,11 +104,12 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 		//
 		column_descriptions: map[string]string{},
 	}
+	mv.SetRoles("user")
 
 	mv.Blueprint = &Blueprint{
 		Name:     model.label(),
-		Endpoint: model.endpoint(),
-		Path:     "/" + model.endpoint(),
+		Endpoint: firstOr(eps, model.endpoint()),
+		Path:     "/" + firstOr(eps, model.endpoint()),
 		Children: map[string]*Blueprint{
 			// In flask-admin use `view.index`. Should use `view.index_view` in `gadmin`
 			"index":        {Endpoint: "index", Path: "/", Handler: mv.indexHandler},
@@ -119,28 +118,24 @@ func NewModelView(m any, db *gorm.DB, category ...string) *ModelView {
 			"details_view": {Endpoint: "details_view", Path: "/details", Handler: mv.detailHandler},
 			"ajax_update":  {Endpoint: "ajax_update", Path: "/ajax/update", Handler: mv.ajaxUpdate},
 			"ajax_lookup":  {Endpoint: "ajax_lookup", Path: "/ajax/lookup", Handler: mv.ajaxLookup},
-			"action_view":  {Endpoint: "action_view", Path: "/action", Handler: mv.actionHandler},
+			"action":       {Endpoint: "action", Path: "/action", Handler: mv.actionHandler},
 			"edit_view":    {Endpoint: "edit_view", Path: "/edit", Handler: mv.editHandler},
 			"delete_view":  {Endpoint: "delete_view", Path: "/delete", Handler: mv.deleteHandler},
 			// not .export_view
 			"export": {Endpoint: "export", Path: "/export", Handler: mv.exportHandler},
-			"debug":  {Endpoint: "debug", Path: "/debug", Handler: mv.debugHandler},
 			// for json
 			"list": {Endpoint: "list", Path: "/list", Handler: mv.listJson},
 		},
 	}
-
 	mv.column_sortable_list = mv.sortableColumns()
 
 	mv.gt = NewGroupTempl(
-		"templates/base.gotmpl",
-		"templates/actions.gotmpl",
-		"templates/layout.gotmpl",
-		"templates/lib.gotmpl",
-		"templates/master.gotmpl",
-		"templates/model_layout.gotmpl",
-		"templates/form.gotmpl",
-		"templates/model_row_actions.gotmpl",
+		"templates/base.tmpl",
+		"templates/layout.tmpl",
+		"templates/lib.tmpl",
+		"templates/model_layout.tmpl",
+		"templates/form.tmpl",
+		"templates/model_row_actions.tmpl",
 	)
 	return &mv
 }
@@ -234,13 +229,6 @@ type refer struct {
 	model  *Model
 }
 
-func Refer(a any, fields ...string) *refer {
-	return &refer{
-		model:  NewModel(a),
-		fields: fields,
-	}
-}
-
 func astoss(as []any) string {
 	return strings.Join(lo.Map(as, func(a any, _ int) string { return cast.ToString(a) }), ",")
 }
@@ -308,7 +296,7 @@ func (V *ModelView) AddLookupRefer(a any, fields ...string) *ModelView {
 	if V.lookupRefers == nil {
 		V.lookupRefers = map[string]*refer{}
 	}
-	rf := Refer(a, fields...)
+	rf := &refer{model: NewModel(a), fields: fields}
 	V.lookupRefers[rf.model.name()] = rf
 	return V
 }
@@ -485,7 +473,7 @@ func (V *ModelView) dict(r *http.Request, others ...map[string]any) map[string]a
 
 // Because `default_page_size`, should place here, not query.go
 func (V *ModelView) queryFrom(r *http.Request) *Query {
-	base, _ := V.GetBlueprint().GetUrl(".index")
+	base, _ := V.Blueprint.GetUrl(".index")
 	q := Query{default_page_size: V.page_size, PageSize: V.page_size,
 		base: base}
 	r.ParseForm()
@@ -571,28 +559,17 @@ func (V *ModelView) list_row_actions(r *http.Request) []Action {
 	return actions
 }
 
-func (V *ModelView) debugHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Query().Get("a") == "1" {
-		V.AddFlash(r, FlashSuccess(`Record was successfully deleted.
-1 records were successfully deleted.`))
-		V.redirect(w, r, "/admin/company")
-		return
-	}
-	w.Header().Set("foo", "bar")
-
-	V.Render(w, r, "debug.gotmpl", nil, map[string]any{
-		"query":     V.queryFrom(r),
-		"menu":      V.Menu,
-		"blueprint": V.Blueprint.dict(),
-	})
-}
 func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 	q := V.queryFrom(r)
 
 	result := V.list(q)
 	result.Fields = V.fsList
 
-	V.Render(w, r, "model_list.gotmpl", template.FuncMap{
+	if result.Error != nil {
+		V.AddFlash(r, FlashError(result.Error))
+	}
+
+	V.Render(w, r, "model_list.tmpl", template.FuncMap{
 		"is_sortable": func(name string) bool {
 			return slices.Contains(V.column_sortable_list, name)
 		},
@@ -623,14 +600,13 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 		"data":                     result.Rows, // TODO: remove
 		"result":                   result,
 		"request":                  rd(r),
-		"get_pk_value":             V.get_pk_value,
 		"column_display_pk":        V.column_display_pk,
 		"column_display_actions":   V.column_display_actions,
 		"column_extra_row_actions": nil,
 		"list_row_actions":         V.list_row_actions(r),
 		"actions": []Action{{Name: "delete", Title: "Delete",
 			CSRFToken: csrf.Token(r),
-			URL:       must(V.Blueprint.GetUrl(".action_view")),
+			URL:       must(V.Blueprint.GetUrl(".action")),
 			ReturnURL: must(V.Blueprint.GetUrl(".index_view"))}},
 		"actions_confirmation": map[string]string{"delete": "Are you sure you want to delete selected records?"},
 		"list_columns":         V.fsList,
@@ -645,11 +621,14 @@ func (V *ModelView) indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return ""
 		}(),
-		"sort_desc":              q.Desc,
+		"sort_desc": q.Desc,
+
+		// search
 		"search":                 q.Search,
 		"column_searchable_list": V.column_searchable_list,
 		"search_placeholder":     strings.Join(V.column_searchable_list, ","),
 
+		// filter
 		"filters":        len(V.column_filters) > 0,
 		"filter_groups":  toGroup(V.filters),
 		"active_filters": activeFilter(q.filters), // [[27, "Title", "part"]]
@@ -706,7 +685,7 @@ func (V *ModelView) newHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET
-	V.Render(w, r, "model_create.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_create.tmpl", nil, map[string]any{
 		"request":    rd(r),
 		"form":       NewForm(V.fsNew, nil, csrf.Token(r)),
 		"cancel_url": must(V.Blueprint.GetUrl(".index_view")),
@@ -761,7 +740,7 @@ func (V *ModelView) editHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	V.Render(w, r, "model_edit.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_edit.tmpl", nil, map[string]any{
 		"row":     row,
 		"form":    NewForm(V.fsEdit, row, csrf.Token(r)),
 		"request": rd(r),
@@ -805,7 +784,7 @@ func (V *ModelView) detailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	V.Render(w, r, "model_details.gotmpl", nil, map[string]any{
+	V.Render(w, r, "model_details.tmpl", nil, map[string]any{
 		"row":             row,
 		"details_columns": V.Fields, // show all fields
 		"request":         rd(r),
@@ -880,7 +859,8 @@ func (V *ModelView) exportHandler(w http.ResponseWriter, r *http.Request) {
 	q := V.queryFrom(r)
 	result := V.list(q)
 	if result.Error != nil {
-		panic(result.Error)
+		V.AddFlash(r, FlashError(result.Error))
+		return
 	}
 
 	fn := fmt.Sprintf("attachment;filename=%s-%s.csv", V.name(),
@@ -934,11 +914,8 @@ func (V *ModelView) Render(w http.ResponseWriter, r *http.Request, name string, 
 		"get_flashed_messages": func() []any {
 			return V.admin.Session(r).Flashes()
 		},
-		"get_url": func(endpoint string, args ...any) string {
-			return must(V.Blueprint.GetUrl(endpoint, args...))
-		},
-		"pager_url": func(page int) string {
-			return must(V.Blueprint.GetUrl(".index_view", "page", page))
+		"get_url": func(endpoint string, args ...any) (string, error) {
+			return V.Blueprint.GetUrl(endpoint, args...)
 		},
 		"csrf_token":  func() string { return csrf.Token(r) },
 		"list_form":   V.inline_form(csrf.Token(r)),
@@ -965,7 +942,7 @@ func (V *ModelView) intoRow(uv url.Values, fields []*Field) *Row {
 
 		if len(f.Choices) > 0 {
 			// fix field_select2 formerly None(in python) to null
-			// TODO: fix in form.gotmpl
+			// TODO: fix in form.tmpl
 			if v == "__None" {
 				continue // ignore
 			}

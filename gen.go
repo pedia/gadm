@@ -45,7 +45,8 @@ func (g *generator) Run(admin *Admin, w io.Writer) error {
 
 	g.logger.Println("generate start")
 
-	db, err := Parse(g.Url).Open(&gorm.Config{
+	// open db
+	db, err := Open(g.Url, &gorm.Config{
 		NamingStrategy: Namer,
 		Logger: logger.New(g.logger, logger.Config{
 			SlowThreshold:             200 * time.Millisecond,
@@ -60,9 +61,15 @@ func (g *generator) Run(admin *Admin, w io.Writer) error {
 
 	g.logger.Printf("database %s opened", g.Url)
 
+	// for _, cs := range must(GetTables(db)) {
+	// 	g.logger.Println("found table", cs)
+	// 	if doc, err := sqlparser.Parse(db.Dialector.Name(), cs); err == nil {
+	// 		_ = doc[0]
+	// 	}
+	// }
+
 	m := db.Migrator()
 	for _, table := range must(m.GetTables()) {
-		g.logger.Println("found table", table)
 		cts := must(m.ColumnTypes(table))
 		idx := must(m.GetIndexes(table))
 		g.EmitTable(table, cts, idx)
@@ -73,8 +80,8 @@ func (g *generator) Run(admin *Admin, w io.Writer) error {
 	}
 	g.logger.Printf("database closed")
 
-	_ = os.Mkdir("dao", 0766)
-	//
+	_ = os.Mkdir("dao", 0755)
+
 	g.logger.Printf("write dao/models.gen.go")
 	f, err := os.OpenFile("dao/models.gen.go", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
@@ -101,6 +108,8 @@ func (g *generator) Run(admin *Admin, w io.Writer) error {
 	// execute ./dao
 	g.exec("go", "fmt", "./dao")
 	g.exec("go", "test", "./dao")
+	// go mod init main?
+	// go get gadm?
 
 	if isdebug.On {
 		g.exec("go", "build", "-buildmode=plugin",
@@ -296,7 +305,7 @@ func (g *generator) applyTag(f *schema.Field) {
 	if f.PrimaryKey {
 		parts = append(parts, "primaryKey")
 	}
-	if f.AutoIncrement {
+	if f.AutoIncrement { // TODO:
 		parts = append(parts, "autoIncrement")
 	}
 	// default value (keep as-is)
@@ -319,6 +328,10 @@ func (g *generator) applyTag(f *schema.Field) {
 		parts = append(parts, fmt.Sprintf("comment:%s", safeComment))
 	}
 
+	if len(parts) == 0 {
+		return
+	}
+
 	tag := strings.Join(parts, ";")
 	// f.Tag will be embedded inside backticks when writing the struct
 	f.Tag = reflect.StructTag(fmt.Sprintf("gorm:\"%s\"", tag))
@@ -338,7 +351,7 @@ func (g *generator) writeSchema(w io.Writer, table *schema.Schema) {
 			// field.Tag is a reflect.StructTag (underlying string) and may contain quotes; wrap in backticks
 			fmt.Fprintf(w, "\t%s %s `%s`\n", field.Name, field.GORMDataType, string(field.Tag))
 		} else {
-			fmt.Fprintf(w, "\t%s %s\n", field.Name, field.DataType)
+			fmt.Fprintf(w, "\t%s %s\n", field.Name, field.GORMDataType)
 		}
 	}
 	fmt.Fprintf(w, "}\n\n")
@@ -365,7 +378,6 @@ import (
 	"testing"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestDaoModels(t *testing.T) {
@@ -374,14 +386,10 @@ func TestDaoModels(t *testing.T) {
 		_ = os.Chdir("..")
 	}
 
-	db, err := gadm.Parse("{{.Url}}").Open(
-		&gorm.Config{
-			NamingStrategy: gadm.Namer,
-			Logger:         logger.Default.LogMode(logger.Info)})
+	db, err := gadm.Open("{{.Url}}")
 	if err != nil {
 		return
 	}
-
 	
 	var models = []any{ {{range .Tables}}
 		&{{.Name}}{}, 
@@ -401,7 +409,7 @@ package {{.Package}}
 import "gadm"
 
 func Views() []*gadm.ModelView {
-	db, err := gadm.Parse("{{.Url}})").Open()
+	db, err := gadm.Open("{{.Url}})")
 	if err != nil {
 		return nil
 	}
@@ -430,7 +438,7 @@ func LoadPlugin(admin *Admin, fn string) error {
 		if ft, ok := f.(func() []*ModelView); ok {
 			vs := ft()
 			for _, v := range vs {
-				admin.AddView(v)
+				admin.AddView(v, "Generate")
 			}
 		}
 	}

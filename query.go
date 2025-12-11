@@ -172,8 +172,8 @@ func (r *Result) PageItems() []pager {
 var pagerTemplate *template.Template
 
 func init() {
-	if _, err := os.Stat("templates/pager.gotmpl"); err == nil {
-		pagerTemplate = parseTemplate("pager", nil, "templates/pager.gotmpl")
+	if _, err := os.Stat("templates/pager.tmpl"); err == nil {
+		pagerTemplate = parseTemplate("pager", nil, "templates/pager.tmpl")
 	}
 }
 

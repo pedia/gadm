@@ -1,0 +1,122 @@
+{{ block "menu" .}}
+        {{ with $m := . -}}
+            <li{{ if $m.Class }} class="{{ $m.Class }}{{ if .IsActive }} active{{ end }}"{{ end }}>
+                <a class="nav-link" href="{{ $m.Path }}">{{ $m.Name }}</a>
+            </li>
+        {{- end -}}
+    {{- range .Children -}}
+        {{- if .Children }}
+            {{ if ne .Name "Account" }}
+            {{ if .IsVisible }}
+            <li class="{{ if .IsActive }}active {{ end }}dropdown{{ if .Class }} {{ .Class }}{{ end }}">
+                <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="javascript:void(0)">{{ .Name }}<i class="glyphicon glyphicon-chevron-down small"></i></a>
+                <ul class="dropdown-menu">
+                    {{- range .Children -}}
+                        {{ template "menu_item" . }}
+                    {{- end }}
+                </ul>
+            </li>
+            {{ end }}
+            {{ end }}
+        {{- else }}
+            {{ if .IsVisible }}
+            <li{{ if .Class }} class="{{ .Class }}"{{ end }}>
+                <a class="nav-link" href="{{ .Path }}">{{ .Name }}</a>
+            </li>
+            {{ end }}
+        {{ end -}}
+    {{- end -}}
+{{ end }}
+
+
+{{ define "menu_item" }}
+    {{/* dropleft, dropright */}}
+    {{ if .IsVisible }}
+    {{- if .Children }}
+            <li class="dropdown dropdown-submenu dropleft">
+                <a class="dropdown-toggle dropdown-item" data-toggle="dropdown" href="javascript:void(0)">
+                    <span class=" dropdown-submenu dropleft"></span>{{ .Name }}
+                    <i class="glyphicon glyphicon-chevron-right small"></i>
+                </a>
+                <ul class="dropdown-menu">
+                    {{- range .Children }}
+                        {{- template "menu_item" . -}}
+                    {{ end }}
+                </ul>
+            </li>
+    {{ else }}
+            <li>
+                <a class="dropdown-item" href="{{ .Path }}">{{ .Name }}</a>
+            </li>
+    {{- end }}
+    {{ end }}
+{{ end }}
+
+
+{{ define "layout_messages" }}
+    {{- range get_flashed_messages }}
+        <div class="alert alert-{{ .Category }} alert-dismissable">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            {{ .Data }}
+        </div>
+    {{ end -}}
+{{ end }}
+
+
+{{ define "security" }}
+    <li class="dropdown{{ if .Class }} {{ .Class }}{{ end }}">
+        <a class="dropdown-toggle nav-link" data-toggle="dropdown" href="javascript:void(0)">{{ .Name }}<i class="glyphicon glyphicon-chevron-down small"></i></a>
+        <ul class="dropdown-menu">
+            {{- range .Children -}}
+                {{ template "menu_item" . }}
+            {{- end }}
+        </ul>
+    </li>
+{{ end }}
+
+
+{{/* (actions, btn_class='nav-link dropdown-toggle' */}}
+{{ define "actionlib_dropdown" -}}
+  {{ $btn_class := "nav-link dropdown-toggle" }}
+    <a class="{{ $btn_class }}" data-toggle="dropdown" href="javascript:void(0)" role="button" aria-haspopup="true"
+       aria-expanded="false">{{ gettext "With selected" }}<b class="caret"></b></a>
+    <div class="dropdown-menu">
+            <a class="dropdown-item" href="javascript:void(0)"
+               onclick="return modelActions.execute('{{ .Name }}');">{{ .Title }}</a>
+    </div>
+{{ end }}
+
+{{/* (actions, url) */}}
+{{ define "actionlib_form" }}
+        <form id="action_form" action="{{ .URL }}" method="POST" style="display: none">
+        {{ if .CSRFToken }}
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}"/>
+        {{ end }}
+            {{/* action_form.url(value=return_url) */}}
+            <input id="url" name="url" type="hidden" value="{{ .ReturnURL }}">
+            <input id="action" name="action" type="hidden" value="{{ .Name }}">
+        </form>
+{{ end }}
+
+
+{{ define "actionlib_script" }}
+        <div id="actions-confirmation-data" style="display:none;">{{ marshal .actions_confirmation }}</div>
+        <div id="message-data" style="display:none;">{{ json .message  }}</div>
+        <script src="{{ admin_static_url "admin/js/actions.js" "1.0.0" }}"></script>
+{{ end }}
+
+
+
+{{ define "admin_nav" }}
+  <ul class="nav nav-tabs">
+      <li class="nav-item">
+          <a href="{{get_url ".console"}}" class="nav-link {{if eq .path (get_url ".console") }}active{{end}}">SQL Console</a>
+      </li>
+      <li class="nav-item">
+          <a href="{{get_url ".trace"}}" title="Trace" class="nav-link {{if eq .path (get_url ".trace") }}active{{end}}">Trace</a>
+      </li>
+      <li class="nav-item">
+          <a href="{{get_url ".generate"}}" title="Generate from Database" class="nav-link {{if eq .path (get_url ".generate") }}active{{end}}">Generate</a>
+      </li>
+  </ul>
+{{ end }}

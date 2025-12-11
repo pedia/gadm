@@ -1,23 +1,28 @@
 package gadm
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"gadm/isdebug"
 	"log"
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 // like flask.Blueprint
 //
-// | Name  | Endpoint       | Path       |
-// |-------|----------------|------------|
-// | Foo   | foo            | /foo/      |
-// |       | .index         | /          |
-// |       | .action_view   | /action    |
-// |       | foo.index      | /foo/      |
-// | Admin | admin          | /admin/    |
-// |       | .index         | /          |
+// | Name  | Endpoint  | Path       |
+// |-------|-----------|------------|
+// | Foo   | foo       | /foo/      |
+// |       | .index    | /          |
+// |       | .action   | /action    |
+// |       | foo.index | /foo/      |
+// | Admin | admin     | /admin/    |
+// |       | .index    | /          |
 //
 // A blueprint is A model and dependent pages
 type Blueprint struct {
@@ -41,6 +46,9 @@ type Blueprint struct {
 
 // like flask `Blueprint.Register`
 func (b *Blueprint) AddChild(child *Blueprint) (err error) {
+	if child.Path != "" && !strings.HasPrefix(child.Path, "/") {
+		fmt.Printf("Blueprint(%s) Path: %s not valid", child.Endpoint, child.Path)
+	}
 	if b.Children == nil {
 		b.Children = map[string]*Blueprint{}
 	}
@@ -76,7 +84,9 @@ func (b *Blueprint) registerTo(mux *http.ServeMux, parent string) {
 			log.Printf("warning: Blueprint(%s path: %s) not start with /", b.Name, b.Path)
 		}
 
-		// log.Printf("%s handle %s", b.Name, parent+b.Path)
+		if isdebug.On {
+			log.Printf("%s handle %s", b.Name, parent+b.Path)
+		}
 		if strings.HasSuffix(b.Path, "/") {
 			mux.HandleFunc(parent+b.Path+"{$}", b.Handler)
 		} else {
@@ -92,8 +102,6 @@ func (b *Blueprint) registerTo(mux *http.ServeMux, parent string) {
 		fs := http.FileServer(http.Dir(b.StaticFolder))
 		mux.Handle(parent+b.Path, // minified.Middleware(
 			http.StripPrefix(parent+b.Path, fs))
-
-		// TODO: add an endpoint
 	}
 
 	// Avoid `ServerMux` duplicated `Path`
@@ -126,9 +134,9 @@ func (b *Blueprint) prefixOf(tail string) string {
 // child.index
 func (b *Blueprint) GetUrl(endpoint string, qs ...any) (string, error) {
 	eps := strings.Split(endpoint, ".")
-	if eps[0] == "" || eps[0] == b.Endpoint || mapContains(b.Children, eps[0]) {
+	if eps[0] == "" || eps[0] == b.Endpoint || inmap(b.Children, eps[0]) {
 		i := 1
-		if mapContains(b.Children, eps[0]) {
+		if inmap(b.Children, eps[0]) {
 			i = 0
 		}
 
@@ -160,35 +168,89 @@ func (b *Blueprint) GetUrl(endpoint string, qs ...any) (string, error) {
 	return "", fmt.Errorf(`endpoint miss for '%s'`, endpoint)
 }
 
-func (b *Blueprint) dict() map[string]any {
-	o := map[string]any{
-		"endpoint": b.Endpoint,
-		"path":     b.Path,
-		"handler":  b.Handler != nil,
-		"name":     b.Name,
-		"parent":   b.Parent != nil,
-	}
-
-	if b.Children != nil {
-		oc := map[string]any{}
-		for k, v := range b.Children {
-			oc[k] = v.dict()
-		}
-		o["children"] = oc
-	}
-	return o
+func (b *Blueprint) MarshalJSON() ([]byte, error) {
+	w := bytes.NewBuffer(nil)
+	err := json.NewEncoder(w).Encode(map[string]any{
+		"endpoint":        b.Endpoint,
+		"path":            b.Path,
+		"name":            b.Name,
+		"children":        b.Children,
+		"static_folder":   b.StaticFolder,
+		"template_folder": b.TemplateFolder,
+	})
+	return w.Bytes(), err
 }
 
-// menu
+// Tree liked structure
+type Menu struct {
+	Name     string
+	Path     string
+	Icon     string
+	Class    string
+	Roles    []string
+	Children []*Menu
+}
 
-// admin scope:
-// admin.logout_view
-// admin.index
-// admin.static
+func (M *Menu) AddMenu(i *Menu, category ...string) {
+	parent := M.find(firstOr(category, M.Name))
+	if parent == nil {
+		parent = &Menu{Name: firstOr(category)}
+		M.Children = append(M.Children, parent)
+	}
+	parent.Children = append(parent.Children, i)
+}
 
-// security(login) scope:
-// security.login /login
-// security.logout /logout
-// security.register /register
-// security.forgot_password
-// security.send_confirmation
+func (M *Menu) find(name string) *Menu {
+	if M.Name == name {
+		return M
+	}
+
+	c, _ := lo.Find(M.Children, func(m *Menu) bool {
+		return m.Name == name
+	})
+	return c
+}
+
+func (M *Menu) dict(current_path string, user_roles []string) map[string]any {
+	return map[string]any{
+		"Name":          M.Name,
+		"Path":          M.Path,
+		"Icon ":         M.Icon,
+		"LoginRequired": len(M.Roles) > 0,
+		"Class":         M.Class,
+		"IsActive":      M.Path != "" && (current_path == M.Path || strings.HasPrefix(current_path, M.Path)),
+		"IsVisible":     M.hasAccess(user_roles),
+		"IsAccessible":  M.hasAccess(user_roles),
+		"Children": lo.Map(M.Children, func(child *Menu, _ int) map[string]any {
+			return child.dict(current_path, user_roles)
+		}),
+	}
+}
+
+func (M *Menu) hasAccess(user_roles []string) bool {
+	if len(user_roles) == 0 && len(M.Roles) > 0 {
+		return false
+	}
+
+	if len(M.Roles) == 0 && len(M.Children) == 0 {
+		return true
+	}
+
+	for _, role := range user_roles {
+		if role == "admin" {
+			return true
+		}
+
+		if slices.Contains(M.Roles, role) {
+			return true
+		}
+	}
+
+	// check children
+	for _, child := range M.Children {
+		if child.hasAccess(user_roles) {
+			return true
+		}
+	}
+	return false
+}
